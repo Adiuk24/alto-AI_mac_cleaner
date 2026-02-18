@@ -1,4 +1,4 @@
-import { type ButtonHTMLAttributes, forwardRef } from 'react';
+import { forwardRef } from 'react';
 import { motion, type HTMLMotionProps } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';

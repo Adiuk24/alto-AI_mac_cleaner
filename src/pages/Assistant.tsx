@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Bot, User, Sparkles, Zap, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Zap, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '../components/Button';
 import { aiService, type ActionResult } from '../services/aiService';
 

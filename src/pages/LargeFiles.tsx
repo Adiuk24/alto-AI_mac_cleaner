@@ -16,8 +16,8 @@ export function LargeFiles() {
         const result = await call<any>('scan_large_files_command');
         if (result) {
             finishLargeFilesScan(result);
-            const allPaths = new Set(result.items.map((i: any) => i.path as string));
-            setSelectedItems(allPaths);
+            const paths = result.items.map((i: any) => String(i.path));
+            setSelectedItems(new Set<string>(paths));
             playCompletionSound();
         }
     };

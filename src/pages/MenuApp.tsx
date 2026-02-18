@@ -4,7 +4,7 @@ import { HardDrive, Cpu, Battery, Activity, Shield, Wifi, Smartphone, Bluetooth,
 import { invoke } from '@tauri-apps/api/core';
 import { formatBytes } from '../utils/formatBytes';
 
-import type { SystemStats, DeviceInfo } from '../types';
+import type { SystemStats } from '../types';
 
 export function MenuApp() {
     const [stats, setStats] = useState<SystemStats | null>(null);
