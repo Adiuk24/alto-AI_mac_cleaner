@@ -3,6 +3,11 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 use dirs::home_dir;
 
+#[cfg(target_os = "windows")]
+use winreg::enums::*;
+#[cfg(target_os = "windows")]
+use winreg::RegKey;
+
 #[derive(Serialize, Debug)]
 pub struct ExtensionItem {
     pub path: String,

@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
+#[cfg(unix)]
 use tokio::net::UnixStream;
+#[cfg(unix)]
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 const CHECK_FILE_PATH: &str = "/var/run/com.alto.helper.sock";
@@ -18,6 +20,7 @@ pub struct Response {
     pub message: String,
 }
 
+#[cfg(unix)]
 pub async fn send_command(cmd: Command) -> Result<Response, String> {
     // 1. Connect to socket
     let mut stream = UnixStream::connect(CHECK_FILE_PATH).await
@@ -43,6 +46,11 @@ pub async fn send_command(cmd: Command) -> Result<Response, String> {
         .map_err(|e| e.to_string())?;
 
     Ok(response)
+}
+
+#[cfg(not(unix))]
+pub async fn send_command(_cmd: Command) -> Result<Response, String> {
+    Err("Helper client is not supported on this platform".to_string())
 }
 
 use std::process::Command as SysCommand;

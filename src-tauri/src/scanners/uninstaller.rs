@@ -1,4 +1,5 @@
 use serde::Serialize;
+#[cfg(target_os = "macos")]
 use std::path::{Path, PathBuf};
 #[cfg(target_os = "macos")]
 use crate::helper_client::{self, Command};
