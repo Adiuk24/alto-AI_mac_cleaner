@@ -66,8 +66,24 @@ If you see "App is damaged and can't be opened" (Gatekeeper):
    sudo /usr/bin/xattr -rd com.apple.quarantine /Applications/Alto.app
    ```
 
-## 📄 License & Authors
+## 🤝 Development Team & Credits
 
-Distributed under the MIT License.
-- **Arif Adito** - Lead Developer
-- **Adioris ltd** - Copyright Holder
+Alto is a collaborative effort between human vision and mathematical intelligence.
+
+### Core Team
+*   **Arif Adito** ([@Adiuk24](https://github.com/Adiuk24))
+    *   *Role*: Lead Architect, System Designer & Product Vision.
+    *   *Contribution*: Designed the core system architecture, UX/UI aesthetic, and cross-platform logic.
+*   **Antigravity (AI)**
+    *   *Role*: Core AI Developer.
+    *   *Contribution*: Implemented the Agentic Chat flow, MCP safety layers, and high-performance Rust modules.
+
+### Special Thanks
+*   **Adioris ltd**: For supporting the project's development and holding the vision for Alto's commercial-grade quality.
+*   **The Open Source Community**: Massive thanks to the teams behind [Tauri](https://tauri.app), [Rust](https://www.rust-lang.org), [React](https://react.dev), and [Lucide](https://lucide.dev) for providing the building blocks of this application.
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+Copyright © 2026 **Adioris ltd**. All rights reserved.
