@@ -82,6 +82,17 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4.  Push to the Branch (`git push origin feature/AmazingFeature`)
 5.  Open a Pull Request
 
+## 🛠️ Troubleshooting
+
+### macOS: "App is damaged and can't be opened"
+If you see this error, it is because the app is not notarized by Apple yet. To fix this:
+1. Move **Alto** to your `Applications` folder.
+2. Open Terminal and run:
+   ```bash
+   sudo xattr -rd com.apple.quarantine /Applications/Alto.app
+   ```
+3. Enter your password, and then you can open the app!
+
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
