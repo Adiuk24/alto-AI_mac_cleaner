@@ -1,0 +1,77 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  :root {
+    /* Deep Purple / Space Theme (Default) */
+    --background: 237 28% 14%;
+    /* #1a1b2e */
+    --foreground: 0 0% 100%;
+
+    --card: 243 33% 25%;
+    /* #2d2b55 */
+    --card-foreground: 0 0% 100%;
+
+    --popover: 237 28% 14%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 173 58% 55%;
+    /* #4ecdc4 */
+    --primary-foreground: 237 28% 14%;
+
+    --secondary: 243 33% 35%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 237 20% 20%;
+    --muted-foreground: 237 20% 70%;
+
+    --accent: 0 100% 71%;
+    /* #ff6b6b */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 243 33% 30%;
+    --input: 243 33% 30%;
+    --ring: 173 58% 55%;
+
+    --radius: 1rem;
+  }
+
+  .light {
+    /* Optional: Light mode override if needed, but we focus on Space theme */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    /* ... keep default light values if we want dual support, 
+       but user requested "Deep Purple/Space" theme specifically. 
+       We will prioritize the dark/space look as default. */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background: radial-gradient(circle at top left, #2d2b55, #1a1b2e);
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/10 backdrop-blur-lg border border-white/10;
+  }
+
+  .glass-strong {
+    @apply bg-gray-900/60 backdrop-blur-xl border border-white/10;
+  }
+
+  .glass-card {
+    @apply bg-white/5 hover:bg-white/10 transition-colors backdrop-blur-md border border-white/5 rounded-2xl;
+  }
+}
