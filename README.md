@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# Alto - AI Powered Mac Cleaner
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Alto Hero](src/assets/hero.png)
 
-Currently, two official plugins are available:
+**Alto** is a modern, high-performance macOS cleaning and optimization tool built with **Tauri**, **React**, and **Rust**. It combines a beautiful, native-feeling UI with powerful system access to keep your Mac running smoothly.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+> **Note**: This is an open-source project. Use at your own risk. Always backup important data before running cleaner tools.
 
-## React Compiler
+## 🚀 Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+*   **🤖 AI Assistant**: proactive system health monitoring and smart recommendations.
+*   **🧹 System Junk**: Deep scan and removal of cache, logs, and temporary files.
+*   **🛡️ Malware Scan**: Fast and efficient scanning for known macOS threats.
+*   **📦 Uninstaller**: Cleanly remove applications and their leftover files.
+*   **🔍 Large Files**: Find and manage massive files taking up space.
+*   **🗑️ Shredder**: Securely delete sensitive files beyond recovery.
+*   **🧩 Extensions**: Manage Safari extensions, launch agents, and login items.
+*   **📧 Mail Cleaner**: Remove local mail attachments to free up space.
+*   **🔭 Space Lens**: Visual explorer for your disk usage (Coming Soon).
 
-## Expanding the ESLint configuration
+## 🛠️ Technology Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+*   **Frontend**: React, TypeScript, TailwindCSS, Framer Motion
+*   **Backend**: Rust (Tauri v2)
+*   **Build Tool**: Vite
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 📥 Installation
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### For Users
+1.  Go to the [Releases](https://github.com/Adiuk24/alto-AI_mac_cleaner/releases) page (if available).
+2.  Download the latest `.dmg` file.
+3.  Open the `.dmg` and drag **Alto** to your **Applications** folder.
+4.  Launch Alto from Launchpad.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### For Developers
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+**Prerequisites:**
+*   [Node.js](https://nodejs.org/) (v18+)
+*   [Rust](https://www.rust-lang.org/tools/install) (latest stable)
+*   [Show Xcode Command Line Tools](https://developer.apple.com/xcode/resources/) (for macOS development)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+**Setup:**
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/Adiuk24/alto-AI_mac_cleaner.git
+    cd alto-AI_mac_cleaner
+    ```
+
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+
+3.  Run in development mode:
+    ```bash
+    npm run tauri dev
+    ```
+
+4.  Build for production:
+    ```bash
+    npm run tauri build
+    ```
+    The output `.dmg` or `.app` will be in `src-tauri/target/release/bundle/macos/`.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
