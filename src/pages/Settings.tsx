@@ -424,6 +424,23 @@ export function Settings() {
                                 {isTesting ? <Loader2 size={14} className="animate-spin" /> : <Wifi size={14} />}
                                 {isTesting ? 'Testing...' : 'Test Connection'}
                             </button>
+
+                            {config.provider === 'webllm' && (
+                                <button
+                                    onClick={async () => {
+                                        if (confirm('This will delete the local AI model cache (~2-4GB) and re-download it on next use. Continue?')) {
+                                            setStatus('Resetting AI Brain...');
+                                            await aiService.resetEngineCache();
+                                            setStatus('AI Brain Reset Successfully.');
+                                            setTimeout(() => setStatus(''), 3000);
+                                        }
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm rounded-xl transition-colors"
+                                >
+                                    <Trash2 size={14} />
+                                    Reset AI Brain
+                                </button>
+                            )}
                         </div>
                     </div>
                 </SectionCard>

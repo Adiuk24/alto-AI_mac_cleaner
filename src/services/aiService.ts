@@ -91,6 +91,32 @@ export class AIService {
         return this.config;
     }
 
+    async resetEngineCache() {
+        if (this.engine) {
+            await this.engine.unload();
+            this.engine = null;
+        }
+
+        // Delete WebLLM related databases
+        const dbs = ['mlc-chat-db', 'mlc-chat-config'];
+        for (const dbName of dbs) {
+            try {
+                const req = indexedDB.deleteDatabase(dbName);
+                await new Promise((resolve, reject) => {
+                    req.onsuccess = resolve;
+                    req.onerror = reject;
+                });
+            } catch (e) {
+                console.error(`Failed to delete DB: ${dbName}`, e);
+            }
+        }
+
+        // Also clear localStorage related to model cache if any
+        Object.keys(localStorage).forEach(key => {
+            if (key.includes('mlc')) localStorage.removeItem(key);
+        });
+    }
+
     saveConfig(config: AIConfig) {
         this.config = config;
         localStorage.setItem(STORE_KEY, JSON.stringify(config));
