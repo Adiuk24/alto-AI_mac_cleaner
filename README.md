@@ -1,20 +1,20 @@
-# Alto - AI Powered Mac Cleaner
+# Alto - AI Powered System Cleaner
 
 ![Alto Hero](src/assets/hero.png)
 
-**Alto** is a modern, high-performance macOS cleaning and optimization tool built with **Tauri**, **React**, and **Rust**. It combines a beautiful, native-feeling UI with powerful system access to keep your Mac running smoothly.
+**Alto** is a modern, high-performance system cleaning and optimization tool built with **Tauri**, **React**, and **Rust**. It combines a beautiful, native-feeling UI with powerful system access to keep your **macOS** and **Windows** devices running smoothly.
 
 > **Note**: This is an open-source project. Use at your own risk. Always backup important data before running cleaner tools.
 
 ## 🚀 Features
 
 *   **🤖 AI Assistant**: proactive system health monitoring and smart recommendations.
-*   **🧹 System Junk**: Deep scan and removal of cache, logs, and temporary files.
-*   **🛡️ Malware Scan**: Fast and efficient scanning for known macOS threats.
+*   **🧹 System Junk**: Deep scan and removal of cache, logs, and temporary files (Supports macOS Caches & Windows `%TEMP%`).
+*   **🛡️ Malware Scan**: Fast and efficient scanning for known threats.
 *   **📦 Uninstaller**: Cleanly remove applications and their leftover files.
 *   **🔍 Large Files**: Find and manage massive files taking up space.
 *   **🗑️ Shredder**: Securely delete sensitive files beyond recovery.
-*   **🧩 Extensions**: Manage Safari extensions, launch agents, and login items.
+*   **🧩 Extensions**: Manage Startup items, Launch Agents, and background processes.
 *   **📧 Mail Cleaner**: Remove local mail attachments to free up space.
 *   **🔭 Space Lens**: Visual explorer for your disk usage (Coming Soon).
 
@@ -37,7 +37,8 @@
 **Prerequisites:**
 *   [Node.js](https://nodejs.org/) (v18+)
 *   [Rust](https://www.rust-lang.org/tools/install) (latest stable)
-*   [Show Xcode Command Line Tools](https://developer.apple.com/xcode/resources/) (for macOS development)
+*   **macOS**: [Xcode Command Line Tools](https://developer.apple.com/xcode/resources/)
+*   **Windows**: [C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (Select "Desktop development with C++")
 
 **Setup:**
 
@@ -61,7 +62,8 @@
     ```bash
     npm run tauri build
     ```
-    The output `.dmg` or `.app` will be in `src-tauri/target/release/bundle/macos/`.
+    *   **macOS**: Output `.dmg` in `src-tauri/target/release/bundle/macos/`
+    *   **Windows**: Output `.msi` or `.exe` in `src-tauri/target/release/bundle/msi/`
 
 ## 🤝 Contributing
 

@@ -2,8 +2,18 @@
   "name": "vite-react-typescript-starter",
   "private": true,
   "version": "0.0.0",
-  "description": "AI Powered Mac Cleaner & Optimizer",
+  "description": "AI Powered System Cleaner & Optimizer (macOS & Windows)",
   "author": "Arif Adito",
+  "keywords": [
+    "cleaner",
+    "optimizer",
+    "mac",
+    "windows",
+    "tauri",
+    "react",
+    "rust",
+    "system-tools"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
