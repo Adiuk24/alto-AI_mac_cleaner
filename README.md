@@ -2,6 +2,13 @@
 
 ![Alto Hero](src/assets/hero.png)
 
+<div align="center">
+
+[![Download for macOS](https://img.shields.io/badge/Download-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/Adiuk24/alto-AI_mac_cleaner/releases/latest)
+[![Download for Windows](https://img.shields.io/badge/Download-Windows-blue?style=for-the-badge&logo=windows)](https://github.com/Adiuk24/alto-AI_mac_cleaner/releases/latest)
+
+</div>
+
 **Alto** is a modern, high-performance system cleaning and optimization tool built with **Tauri**, **React**, and **Rust**. It combines a beautiful, native-feeling UI with powerful system access to keep your **macOS** and **Windows** devices running smoothly.
 
 > **Note**: This is an open-source project. Use at your own risk. Always backup important data before running cleaner tools.
