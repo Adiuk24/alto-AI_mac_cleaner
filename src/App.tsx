@@ -22,8 +22,9 @@ import { useScanStore } from './store/scanStore';
 import { Onboarding } from './pages/Onboarding';
 import { MenuApp } from './pages/MenuApp';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { listen } from '@tauri-apps/api/event';
 import { aiService } from './services/aiService';
+
+import { NotificationManager } from './components/NotificationManager';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -44,13 +45,7 @@ function App() {
       fetchSystemStats();
     }, 5000);
 
-    // Listen for new app installs
-    const unlistenPromise = listen('app-installed', (event: any) => {
-      const { name } = event.payload;
-
-      // Trigger AI to speak (Generated)
-      aiService.generateProactiveAlert('new_app', { appName: name });
-    });
+    // Monitor Loop
 
     // Proactive Monitor Loop
     const monitorInterval = setInterval(() => {
@@ -81,7 +76,6 @@ function App() {
     return () => {
       clearInterval(interval);
       clearInterval(monitorInterval);
-      unlistenPromise.then(unlisten => unlisten());
     };
   }, []);
 
@@ -115,7 +109,7 @@ function App() {
       case 'dashboard':
         return <Dashboard onNavigate={setActiveTab} />;
       case 'assistant':
-        return <Assistant />;
+        return <Assistant onNavigate={setActiveTab} />;
       case 'system-junk':
         return <SystemJunk />;
       case 'uninstaller':
@@ -151,6 +145,7 @@ function App() {
 
   return (
     <AppLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      <NotificationManager />
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}

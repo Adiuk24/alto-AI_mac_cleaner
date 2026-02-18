@@ -5,7 +5,7 @@ use std::path::Path;
 const MIN_SIZE_BYTES: u64 = 50 * 1024 * 1024; // 50 MB
 const MAX_SCAN_ENTRIES: usize = 10_000;
 
-fn scan_dir_recursive(p: &Path, results: &mut Vec<ScannedItem>, errors: &mut Vec<String>, scanned_count: &mut usize) {
+fn scan_dir_recursive(p: &Path, results: &mut Vec<ScannedItem>, _errors: &mut Vec<String>, scanned_count: &mut usize) {
     if *scanned_count > MAX_SCAN_ENTRIES {
         return;
     }
@@ -30,7 +30,7 @@ fn scan_dir_recursive(p: &Path, results: &mut Vec<ScannedItem>, errors: &mut Vec
         };
 
         if meta.is_dir() {
-            scan_dir_recursive(&path, results, errors, scanned_count);
+            scan_dir_recursive(&path, results, _errors, scanned_count);
         } else {
             *scanned_count += 1;
             if meta.len() >= MIN_SIZE_BYTES {

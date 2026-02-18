@@ -20,7 +20,7 @@ pub fn scan_outdated_apps() -> Vec<OutdatedApp> {
 
     // Check Homebrew updates
     if let Ok(output) = Command::new("brew")
-        .args(&["outdated", "--json"])
+        .args(["outdated", "--json"])
         .output() 
     {
         if output.status.success() {

@@ -43,9 +43,11 @@ const JUNK_TEMPLATES: &[&str] = &[
     
     // System/User Junk
     "Library/Application Support/CrashReporter",
+    "Library/Saved Application State", // Saved state for apps (safe to delete, just resets window positions etc)
     ".Trash", // User Trash
     "Desktop", // Scan for loose screenshots
     "Desktop/screenshots", // Common custom folder
+    "Downloads", // Optional: Scan for old installers (dmg, pkg, zip) - logic handled in filter
 ];
 
 #[cfg(target_os = "windows")]
@@ -95,7 +97,9 @@ fn category_name(tpl: &str) -> &'static str {
     else if tpl.contains("CrashReporter") { "Crash Reports" }
     else if tpl.contains(".Trash") { "Trash Bin" }
     else if tpl.contains("Library/Logs") { "User Logs" }
+    else if tpl.contains("Saved Application State") { "App State" }
     else if tpl.contains("Desktop") { "Screenshots" }
+    else if tpl.contains("Downloads") { "Old Installers" }
     
     // Windows Specific
     else if tpl.contains("Edge") { "Edge Cache" }
@@ -170,10 +174,17 @@ pub fn scan_junk(home: &str) -> ScanResult {
                 }
 
                 // Desktop specific logic: Only pick up screenshots
-                if is_desktop {
-                     if !name.starts_with("Screenshot") {
+                if is_desktop
+                     && !name.starts_with("Screenshot") {
                          continue;
                      }
+
+                // Downloads specific logic: Only pick up likely installers/archives
+                if tpl.contains("Downloads") {
+                    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+                    if !["dmg", "pkg", "iso", "zip", "tar", "gz", "7z", "rar"].contains(&ext.as_str()) {
+                        continue;
+                    }
                 }
             }
 

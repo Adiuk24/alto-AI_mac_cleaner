@@ -106,7 +106,7 @@ pub async fn ensure_helper_installed() -> bool {
                 println!("Installation success. Waiting for helper start...");
                 tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                 // Verify ping again
-                return send_command(Command::Ping).await.is_ok();
+                send_command(Command::Ping).await.is_ok()
             } else {
                 println!("Installation failed: {}", String::from_utf8_lossy(&o.stderr));
                 false

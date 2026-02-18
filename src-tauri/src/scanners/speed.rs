@@ -62,8 +62,7 @@ fn allocate_and_drop() {
     // Allocate ~500MB of zeroed memory, touch it, then drop it.
     // This forces swap/compression of other stale pages.
     let size = 500 * 1024 * 1024;
-    let mut vec = Vec::with_capacity(size);
-    unsafe { vec.set_len(size); }
+    let mut vec = vec![0u8; size];
     // touch pages
     for i in (0..size).step_by(4096) {
         vec[i] = 1; 

@@ -25,6 +25,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["macos-private-api", "protocol-asset", "tray-icon"] }
 tauri-plugin-shell = "2"
+tauri-plugin-notification = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 dirs = "5"
@@ -47,3 +48,10 @@ winreg = "0.52"
 
 [dev-dependencies]
 tempfile = "3.24.0"
+
+[profile.release]
+lto = true        # Link Time Optimization
+codegen-units = 1 # Better optimization at cost of compile time
+panic = "abort"   # Smaller binary
+strip = true      # Remove symbols
+opt-level = 3     # Max optimization

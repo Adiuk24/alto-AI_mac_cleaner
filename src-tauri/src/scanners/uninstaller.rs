@@ -156,7 +156,7 @@ pub async fn uninstall_app(path: &str) -> Result<(), String> {
     println!("Uninstalling {}. Found {} leftovers.", path, leftovers.len());
 
     // 2. Try Standard Trash (User Mode)
-    if let Err(_) = trash::delete(path) {
+    if trash::delete(path).is_err() {
         println!("Trash failed. Trying Helper (Root Mode)...");
         // 3. Upgrade to Protector Mode: Use Helper
         
@@ -172,7 +172,7 @@ pub async fn uninstall_app(path: &str) -> Result<(), String> {
     // 4. Delete Leftovers
     for leftover in leftovers {
         let l_path = leftover.to_string_lossy().to_string();
-        if let Err(_) = trash::delete(&leftover) {
+        if trash::delete(&leftover).is_err() {
              // If user can't delete leftover, ask helper
              let cmd = Command::DeletePath { path: l_path };
              let _ = helper_client::send_command(cmd).await;

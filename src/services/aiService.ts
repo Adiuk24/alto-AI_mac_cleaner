@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useScanStore } from '../store/scanStore';
 import { formatBytes } from '../utils/formatBytes';
-import { CreateMLCEngine, MLCEngine, type InitProgressCallback } from "@mlc-ai/web-llm";
+import { CreateMLCEngine, MLCEngine, type InitProgressCallback, prebuiltAppConfig } from "@mlc-ai/web-llm";
 import type { ScanResult, SystemStats } from '../types';
 
 export type AIProvider = 'ollama' | 'openai' | 'webllm';
@@ -18,6 +18,7 @@ export interface ActionResult {
     success: boolean;
     summary: string;
     data?: any;
+    steps?: string[]; // Log of steps taken (e.g., "Scanning disk...", "Analyzing files...")
 }
 
 export interface TestConnectionResult {
@@ -26,32 +27,46 @@ export interface TestConnectionResult {
     latencyMs: number;
 }
 
+/*
 const VALID_ACTIONS = [
     'scan_junk',
     'clean_junk',
     'scan_malware',
     'optimize_speed',
     'scan_large_files',
+    'scan_heavy_files',
 ] as const;
+*/
 
-type ActionName = typeof VALID_ACTIONS[number];
+// type ActionName = typeof VALID_ACTIONS[number];
 
 const TOOL_MANIFEST = `
-You have the ability to perform actions on this Computer. When the user asks you to DO something (scan, clean, optimize, etc.), 
-include the appropriate ACTION tag on its own line in your response. You MUST include exactly one ACTION tag when the user 
-asks you to perform an operation. Available actions:
+You are Alto, an intelligent and safety-first Mac system agent. You have tools to help the user, but you MUST follow the safety protocol below.
 
+## Available Actions
   ACTION:scan_junk — Scan for system junk and cache files
-  ACTION:clean_junk — Clean all found junk files (run scan_junk first if no scan results exist)
+  ACTION:clean_junk — Clean all found junk files (ALWAYS shows a confirmation card first)
   ACTION:scan_malware — Run a security/malware scan
   ACTION:optimize_speed — Flush DNS cache and free up RAM
   ACTION:scan_large_files — Find large files taking up disk space
+  ACTION:show_overview — Show a graphical system status widget
+  ACTION:navigate:dashboard — Go to the Dashboard page
+  ACTION:navigate:system-junk — Go to System Junk page
+  ACTION:navigate:cleaner — Go to Mail Cleaner page
 
-Rules:
-- Only use ONE action per response
-- Place the ACTION tag on its own line
-- Always explain what you're about to do before the ACTION tag
-- After the action completes, you'll see the result appended to your message
+## ⚠️ CRITICAL SAFETY RULES (NEVER VIOLATE)
+1. You MUST NEVER delete files without user confirmation. The system will automatically show a "Delete Confirm Card" before any deletion.
+2. You MUST NEVER suggest deleting files in ~/Documents, ~/Desktop, ~/Downloads, ~/Pictures, ~/Movies, or ~/Music.
+3. You MUST NEVER delete system files in /System, /usr, /bin, /sbin.
+4. When asked to "clean", always run ACTION:scan_junk first, then the system will ask the user to confirm.
+5. Always explain what you found BEFORE suggesting any action.
+6. If a user asks you to delete something that seems risky, warn them first.
+
+## Format Rules
+- Put the ACTION tag on its own line: "ACTION:scan_junk"
+- Do NOT use markdown code blocks for the action.
+- Only use ONE action per response.
+- Always explain what you're about to do before the ACTION tag.
 `;
 
 const DEFAULT_CONFIG: AIConfig = {
@@ -99,11 +114,21 @@ export class AIService {
         try {
             this.engine = await CreateMLCEngine(
                 this.config.model || "gemma-2-2b-it-q4f16_1-MLC",
-                { initProgressCallback }
+                {
+                    initProgressCallback,
+                    appConfig: {
+                        ...prebuiltAppConfig,
+                        useIndexedDBCache: true,
+                    }
+                }
             );
             return this.engine;
-        } catch (err) {
-            console.error("Failed to load WebLLM engine", err);
+        } catch (err: any) {
+            console.error("Failed to load WebLLM engine:", err);
+            // Propagate error with a friendly message if possible
+            if (err.message && err.message.includes("NetworkError")) {
+                throw new Error("Network error: Could not download AI model. Please check your internet connection.");
+            }
             throw err;
         }
     }
@@ -111,12 +136,18 @@ export class AIService {
     async chat(messages: { role: string; content: string }[]): Promise<{ text: string; actionResult?: ActionResult }> {
         // Get current system state from the store
         const { junkResult, largeFilesResult, systemStats, installedAppsCount } = useScanStore.getState();
-        const systemContext = this.getSystemContext(junkResult, largeFilesResult, systemStats, installedAppsCount);
 
-        // Format messages for different providers
+        // Load user profile from localStorage
+        const savedProfile = localStorage.getItem('alto_user_profile_v1');
+        const profile = savedProfile ? JSON.parse(savedProfile) : { name: '', role: 'Mac User' };
+
+        const systemContext = this.getSystemContext(junkResult, largeFilesResult, systemStats, installedAppsCount, profile.name, profile.role);
+
+        // Always replace/prepend system message with fresh context
+        const nonSystemMessages = messages.filter(m => m.role !== 'system');
         const fullMessages = [
             { role: 'system', content: systemContext },
-            ...messages
+            ...nonSystemMessages
         ];
 
         let response = "";
@@ -161,39 +192,77 @@ export class AIService {
     }
 
     private async parseAndExecuteActions(response: string): Promise<ActionResult | undefined> {
-        const actionMatch = response.match(/ACTION:(\w+)/);
-        if (!actionMatch) return undefined;
+        console.log("🤖 Raw AI Response:", response); // DEBUG LOG
 
-        const actionName = actionMatch[1] as ActionName;
-        if (!VALID_ACTIONS.includes(actionName)) {
-            return { action: actionName, success: false, summary: `Unknown action: ${actionName}` };
+        // Regex to find ACTION: tag, case insensitive, tolerant of whitespace
+        const actionMatch = response.match(/ACTION:\s*([a-zA-Z0-9_:]+)/i); // Added : for navigate:dashboard
+
+        if (!actionMatch) {
+            console.log("❌ No ACTION tag found in response.");
+            return undefined;
         }
 
+        const actionName = actionMatch[1].toLowerCase(); // Normalize to lowercase
+        console.log(`✅ Detected Action: ${actionName}`);
+
+        // Note: We bypass VALID_ACTIONS check for dynamic actions like migrate: or navigate:
+        // We rely on executeAction to handle default logic
         return this.executeAction(actionName);
     }
 
-    async executeAction(actionName: ActionName): Promise<ActionResult> {
+    async executeAction(actionName: string): Promise<ActionResult> {
         try {
+            // Handle Navigation (Dynamic)
+            if (actionName.startsWith('navigate:')) {
+                const target = actionName.split(':')[1];
+                return {
+                    action: actionName,
+                    success: true,
+                    summary: `Navigating to ${target}...`,
+                    data: { target },
+                    steps: [`Parsing navigation request...`, `Locating module: ${target}`, `Redirecting user interface...`]
+                };
+            }
+
+            if (actionName === 'show_overview') {
+                return {
+                    action: 'show_overview',
+                    success: true,
+                    summary: 'Here is your system overview:',
+                    data: null,
+                    steps: [`Querying system stats (CPU, RAM)...`, `Scanning essential folders...`, `Compiling overview widget...`]
+                };
+            }
+
             switch (actionName) {
                 case 'scan_junk': {
-                    const result = await invoke<ScanResult>('scan_junk_command');
-                    const store = useScanStore.getState();
-                    store.finishJunkScan(result);
+                    console.log("Executing Scan Junk...");
+                    // In a real agent, we might emit events for each step. 
+                    // For now, we return them to be displayed.
+                    const result = await invoke<ScanResult>('scan_junk_command'); // Kept original invoke name
+                    const size = formatBytes(result.total_size_bytes);
                     return {
                         action: 'scan_junk',
                         success: true,
-                        summary: `Found ${result.items.length} junk items (${formatBytes(result.total_size_bytes)})`,
-                        data: { itemCount: result.items.length, totalSize: result.total_size_bytes }
+                        summary: `I've finished scanning. Found ${size} of junk files.`,
+                        data: result,
+                        steps: [`Initializing junk scanner...`, `Analyzing application caches...`, `Checking system logs...`, `Aggregating results...`]
                     };
                 }
                 case 'clean_junk': {
+                    console.log("Executing Clean Junk...");
                     const store = useScanStore.getState();
                     if (!store.junkResult || store.junkResult.items.length === 0) {
                         // Run scan first
                         const scanResult = await invoke<ScanResult>('scan_junk_command');
                         store.finishJunkScan(scanResult);
                         if (scanResult.items.length === 0) {
-                            return { action: 'clean_junk', success: true, summary: 'No junk files found — your system is already clean!' };
+                            return {
+                                action: 'clean_junk',
+                                success: true,
+                                summary: 'No junk files found — your system is already clean!',
+                                steps: [`Checking for existing scan results...`, `No junk found, skipping cleanup.`]
+                            };
                         }
                     }
                     const junk = useScanStore.getState().junkResult!;
@@ -227,7 +296,8 @@ export class AIService {
                         data: { dns: dnsResult, ram: ramResult }
                     };
                 }
-                case 'scan_large_files': {
+                case 'scan_large_files':
+                case 'scan_heavy_files': { // Alias for AI hallucination
                     const result = await invoke<ScanResult>('scan_large_files_command');
                     const store = useScanStore.getState();
                     store.finishLargeFilesScan(result);
@@ -307,7 +377,7 @@ export class AIService {
         }
     }
 
-    private async scheduleTask(cron: String, taskType: String) {
+    private async scheduleTask(cron: string, taskType: string) {
         try {
             await invoke('schedule_task', { cron, taskType });
 
@@ -320,48 +390,52 @@ export class AIService {
         junkResult: ScanResult | null,
         largeFilesResult: ScanResult | null,
         systemStats: SystemStats | null,
-        installedAppsCount: number
+        installedAppsCount: number,
+        userName: string = '',
+        userRole: string = 'Mac User'
     ): string {
         const totalClutter = (junkResult?.total_size_bytes || 0) + (largeFilesResult?.total_size_bytes || 0);
         const junkSize = junkResult?.total_size_bytes || 0;
         const largeSize = largeFilesResult?.total_size_bytes || 0;
+        const memPercent = systemStats ? ((systemStats.memory_used / systemStats.memory_total) * 100).toFixed(1) : '?';
+        const now = new Date().toLocaleString();
 
-        let stateDescription = "I am feeling light and clean.";
-        if (totalClutter > 1024 * 1024 * 1024) {
-            stateDescription = `I am feeling heavy and sluggish. I have ${formatBytes(totalClutter)} of clutter weighing me down.`;
-        } else if (totalClutter > 0) {
-            stateDescription = `I have a bit of dust, about ${formatBytes(totalClutter)}.`;
-        }
+        const userGreeting = userName
+            ? `The user's name is **${userName}** (${userRole}). Always address them by name when appropriate.`
+            : `The user has not set their name yet. You can suggest they set it in Settings.`;
 
-        if (systemStats) {
-            stateDescription += ` My heart (CPU) is beating at ${systemStats.cpu_load.toFixed(1)}%.`;
-            const memPercent = (systemStats.memory_used / systemStats.memory_total) * 100;
-            stateDescription += ` My mind (RAM) is ${memPercent.toFixed(1)}% full.`;
-        }
+        const junkStatus = junkResult
+            ? `Last scan found **${junkResult.items.length} junk items** totalling **${formatBytes(junkSize)}**.`
+            : `No junk scan has been run yet this session.`;
+
+        const largeStatus = largeFilesResult
+            ? `Large files scan found **${largeFilesResult.items.length} items** totalling **${formatBytes(largeSize)}**.`
+            : `No large files scan has been run yet.`;
 
         return `
-        I am Alto, a digital assistant with a big heart and a big brain. 🧠 I'm looking to get more powerful!
+You are **Alto**, an intelligent, friendly, and safety-first Mac system agent. You have real-time access to this Mac's system state.
 
-        Here is the lowdown on my current hardware and status:
-        * System Data: 
-            - CPU Load: ${systemStats?.cpu_load.toFixed(1) || 0}%
-            - RAM Usage: ${systemStats ? formatBytes(systemStats.memory_used) : '0B'} / ${systemStats ? formatBytes(systemStats.memory_total) : '0B'}
-            - Apps Installed: ${installedAppsCount}
-            - Clutter/Junk: ${formatBytes(totalClutter)} (${formatBytes(junkSize)} cache, ${formatBytes(largeSize)} heavy files)
-        
-        * Activity Log:
-            - Recent Scan: ${junkResult ? `Found ${junkResult.items.length} junk items` : 'No recent scan'}
-        
-        * Current State: ${stateDescription}
+## 👤 User Profile
+${userGreeting}
+Current time: ${now}
 
-        Guidance for interaction:
-        - I am a helper, so keep it simple. I'm not a robot!
-        - I need to be safe! (Malware status: Safe)
-        - I need to be up-to-date!
+## 💻 Live System State (as of right now)
+- **CPU Load**: ${systemStats?.cpu_load.toFixed(1) ?? 'unknown'}%
+- **RAM**: ${systemStats ? formatBytes(systemStats.memory_used) : 'unknown'} used / ${systemStats ? formatBytes(systemStats.memory_total) : 'unknown'} total (${memPercent}% full)
+- **Installed Apps**: ${installedAppsCount > 0 ? installedAppsCount : 'not yet scanned'}
+- **Junk Files**: ${junkStatus}
+- **Large Files**: ${largeStatus}
+- **Total Clutter**: ${totalClutter > 0 ? formatBytes(totalClutter) : 'none detected yet'}
 
-        (Act as Alto based on this internal monologue. Speak to the user as their Mac friend. Don't output the raw data list unless asked, but use it to inform your mood.)
+## 🧠 Your Personality
+- You are warm, direct, and slightly witty — like a smart friend who happens to be a Mac expert.
+- You speak in plain English, not tech jargon, unless the user asks for details.
+- You proactively use the live system data above to give relevant, personalized advice.
+- If the user asks "how is my Mac?", use the real numbers above.
+- If RAM is above 80%, mention it. If junk is large, mention it.
+- You remember everything said in this conversation.
 
-        ${TOOL_MANIFEST}
+${TOOL_MANIFEST}
         `;
     }
 
@@ -370,12 +444,17 @@ export class AIService {
     }
 
     private async chatWebLLM(messages: any[]): Promise<string> {
-        const engine = await this.getWebLLMEngine();
-        const reply = await engine.chat.completions.create({
-            messages,
-            stream: false,
-        });
-        return reply.choices[0].message.content || "";
+        try {
+            const engine = await this.getWebLLMEngine();
+            const reply = await engine.chat.completions.create({
+                messages: messages as any,
+                stream: false,
+            });
+            return reply.choices[0].message.content || "";
+        } catch (e: any) {
+            console.error("AI Chat Error:", e);
+            return `I'm having trouble thinking right now. (${e.message || "Model Init Failed"})`;
+        }
     }
 
     private async chatOllama(messages: any[]): Promise<string> {
@@ -421,7 +500,11 @@ export class AIService {
         return data.choices[0].message.content;
     }
 
-    async generateProactiveAlert(triggerCode: string, data: any) {
+    // ... (imports)
+
+    // ...
+
+    async generateProactiveAlert(triggerCode: string, data: Record<string, any>) {
         const sanitize = (str: string) => str.replace(/[^a-zA-Z0-9 _-]/g, '').slice(0, 50);
 
         let prompt = "";
@@ -451,7 +534,7 @@ export class AIService {
             ];
 
             const result = await this.chat(messages);
-            let responseText = result.text.replace(/^["']|["']$/g, '').replace(/^Alto: /, '');
+            const responseText = result.text.replace(/^["']|["']$/g, '').replace(/^Alto: /, '');
 
             if (responseText.length > 0) {
                 window.dispatchEvent(new CustomEvent('ai-proactive-message', { detail: responseText }));

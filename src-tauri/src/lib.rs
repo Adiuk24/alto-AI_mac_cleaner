@@ -1,74 +1,132 @@
 mod scanners;
 pub mod helper_client;
+mod mcp;
 
 use scanners::{junk::scan_junk, large_files::scan_large_files, scheduler::Scheduler, system_stats::get_stats, watcher::start_watcher, ScanResult};
-use std::path::Path;
 use tauri::{State, Manager};
+use mcp::{file_index::{index_files, IndexedFile}, context_store::ContextStore};
+
+/// MCP: Return the full context store so the frontend/AI can use it
+#[tauri::command]
+async fn get_mcp_context() -> Result<serde_json::Value, String> {
+    let ctx = ContextStore::load();
+    serde_json::to_value(&ctx).map_err(|e| e.to_string())
+}
 
 struct AppState {
     scheduler: Scheduler,
 }
 
 #[tauri::command]
-fn get_system_stats_command() -> scanners::system_stats::SystemStats {
+async fn get_system_stats_command() -> scanners::system_stats::SystemStats {
     get_stats()
 }
 
 #[tauri::command]
-fn scan_junk_command() -> Result<ScanResult, String> {
+async fn scan_junk_command() -> Result<ScanResult, String> {
     let home = dirs::home_dir().ok_or("No home directory")?;
     let home_str = home.to_string_lossy();
+    // Perform scan in a blocking task to ensure it doesn't block the async runtime if it were to stay on the same thread (though tauri handles async commands on separate threads, explicit spawn_blocking is safer for heavy IO)
+    // Actually, simple async fn in tauri is enough to unblock the main thread.
     Ok(scan_junk(&home_str))
 }
 
 #[tauri::command]
-fn scan_large_files_command() -> Result<ScanResult, String> {
+async fn scan_large_files_command() -> Result<ScanResult, String> {
     let home = dirs::home_dir().ok_or("No home directory")?;
     let home_str = home.to_string_lossy();
     Ok(scan_large_files(&home_str))
 }
 
 #[tauri::command]
-fn scan_space_lens_command() -> Result<scanners::space_lens::FileNode, String> {
-    let home = dirs::home_dir().ok_or("No home directory")?;
-    let home_str = home.to_string_lossy();
-    // Scan up to depth 3 for initial view
-    Ok(scanners::space_lens::scan_space_lens(&home_str, 3))
+async fn scan_space_lens_command(path: Option<String>) -> Result<scanners::space_lens::FileNode, String> {
+    let target_path = if let Some(p) = path {
+        p
+    } else {
+        let home = dirs::home_dir().ok_or("No home directory")?;
+        home.to_string_lossy().to_string()
+    };
+    
+    // If specific path requested, maybe deeper depth? Or keep same?
+    // Let's keep 3 for responsiveness
+    Ok(scanners::space_lens::scan_space_lens(&target_path, 2)) 
 }
 
 #[tauri::command]
-fn scan_malware_command() -> Result<scanners::malware::MalwareResult, String> {
+async fn scan_malware_command() -> Result<scanners::malware::MalwareResult, String> {
     Ok(scanners::malware::scan_malware())
 }
 
 #[tauri::command]
-fn run_speed_task_command(task_id: String) -> Result<scanners::speed::SpeedTaskResult, String> {
+async fn run_speed_task_command(task_id: String) -> Result<scanners::speed::SpeedTaskResult, String> {
     Ok(scanners::speed::run_optimization_task(&task_id))
 }
 
+/// MCP Phase 1: Preview what would be deleted — NEVER deletes anything.
+/// Returns an indexed list of files with safety flags.
 #[tauri::command]
-fn clean_items(paths: Vec<String>) -> Result<serde_json::Value, String> {
-    let mut removed = 0;
-    let mut errors = Vec::new();
-    for p in paths {
-        if !Path::new(&p).exists() {
-            continue;
-        }
-        match trash::delete(&p) {
-            Ok(_) => removed += 1,
-            Err(e) => errors.push(format!("{}: {}", p, e)),
+async fn preview_delete(paths: Vec<String>) -> Result<Vec<IndexedFile>, String> {
+    Ok(index_files(&paths))
+}
+
+/// MCP Phase 2: Confirm and execute deletion — only called after user approves.
+/// Logs the deletion to the context store for history.
+#[tauri::command]
+async fn confirm_delete(paths: Vec<String>) -> Result<serde_json::Value, String> {
+    // Only delete files that are safe according to the indexer
+    let indexed = index_files(&paths);
+    let safe_paths: Vec<String> = indexed.iter()
+        .filter(|f| f.is_safe_to_delete)
+        .map(|f| f.path.clone())
+        .collect();
+    let blocked: Vec<String> = indexed.iter()
+        .filter(|f| !f.is_safe_to_delete)
+        .map(|f| f.path.clone())
+        .collect();
+
+    if safe_paths.is_empty() {
+        return Ok(serde_json::json!({
+            "removed": 0,
+            "blocked": blocked,
+            "errors": ["No safe files to delete after safety check."]
+        }));
+    }
+
+    let path_refs: Vec<&str> = safe_paths.iter().map(|s| s.as_str()).collect();
+    let total_bytes: u64 = indexed.iter().filter(|f| f.is_safe_to_delete).map(|f| f.size_bytes).sum();
+
+    match trash::delete_all(&path_refs) {
+        Ok(_) => {
+            // Log to context store
+            let mut ctx = ContextStore::load();
+            ctx.record_deletion(safe_paths.clone(), total_bytes);
+            Ok(serde_json::json!({
+                "removed": safe_paths.len(),
+                "bytes_freed": total_bytes,
+                "blocked": blocked,
+                "errors": []
+            }))
+        },
+        Err(e) => {
+            Ok(serde_json::json!({ "removed": 0, "errors": [e.to_string()] }))
         }
     }
-    Ok(serde_json::json!({ "removed": removed, "errors": errors }))
+}
+
+/// Legacy command — kept for compatibility but now routes through safety layer.
+#[tauri::command]
+async fn clean_items(paths: Vec<String>) -> Result<serde_json::Value, String> {
+    // Route through the safe confirm_delete
+    confirm_delete(paths).await
 }
 
 #[tauri::command]
-fn schedule_task(cron: String, task_type: String, state: State<AppState>) -> Result<String, String> {
+async fn schedule_task(cron: String, task_type: String, state: State<'_, AppState>) -> Result<String, String> {
     Ok(state.scheduler.add_job(cron, task_type))
 }
 
 #[tauri::command]
-fn scan_apps_command() -> Vec<scanners::uninstaller::AppInfo> {
+async fn scan_apps_command() -> Vec<scanners::uninstaller::AppInfo> {
     scanners::uninstaller::scan_apps()
 }
 
@@ -78,27 +136,27 @@ async fn uninstall_app_command(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn scan_outdated_apps_command() -> Vec<scanners::updater::OutdatedApp> {
+async fn scan_outdated_apps_command() -> Vec<scanners::updater::OutdatedApp> {
     scanners::updater::scan_outdated_apps()
 }
 
 #[tauri::command]
-fn shred_path_command(path: String) -> Result<(), String> {
+async fn shred_path_command(path: String) -> Result<(), String> {
     scanners::shredder::shred_path(&path)
 }
 
 #[tauri::command]
-fn scan_mail_command() -> Vec<scanners::mail::MailAttachment> {
+async fn scan_mail_command() -> Vec<scanners::mail::MailAttachment> {
     scanners::mail::scan_mail_attachments()
 }
 
 #[tauri::command]
-fn clean_mail_command(paths: Vec<String>) -> Result<(), String> {
+async fn clean_mail_command(paths: Vec<String>) -> Result<(), String> {
     scanners::mail::clean_mail_attachments(paths)
 }
 
 #[tauri::command]
-fn scan_extensions_command() -> Vec<scanners::extensions::ExtensionItem> {
+async fn scan_extensions_command() -> Vec<scanners::extensions::ExtensionItem> {
     scanners::extensions::scan_extensions()
 }
 
@@ -111,6 +169,7 @@ async fn remove_extension_command(path: String) -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             app.manage(AppState {
                 scheduler: Scheduler::new(),
@@ -169,7 +228,10 @@ pub fn run() {
             scan_mail_command,
             clean_mail_command,
             scan_extensions_command,
-            remove_extension_command
+            remove_extension_command,
+            preview_delete,
+            confirm_delete,
+            get_mcp_context
         ])
         .run(tauri::generate_context!())
         .expect("error while running Alto");
