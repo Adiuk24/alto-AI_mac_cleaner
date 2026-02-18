@@ -28,10 +28,17 @@ pub fn index_file(path: &str) -> IndexedFile {
     let path_lower = path.to_lowercase();
 
     // --- BLOCKED: System Critical ---
+    #[cfg(target_os = "macos")]
     let system_critical_prefixes = [
         "/system", "/usr", "/bin", "/sbin", "/private/var/db",
         "/library/apple", "/library/coreservices",
     ];
+    #[cfg(target_os = "windows")]
+    let system_critical_prefixes = [
+        "c:\\windows", "c:\\boot", "c:\\recovery", "c:\\system volume information",
+        "c:\\program files\\common files",
+    ];
+
     for prefix in &system_critical_prefixes {
         if path_lower.starts_with(prefix) {
             return IndexedFile {
@@ -40,32 +47,35 @@ pub fn index_file(path: &str) -> IndexedFile {
                 category: FileCategory::SystemCritical,
                 app_owner: None,
                 is_safe_to_delete: false,
-                reason: format!("System critical path: protected by macOS."),
+                reason: format!("System critical path: protected by the operating system."),
             };
         }
     }
 
     // --- BLOCKED: User Data ---
     let user_data_patterns = [
-        "/documents/", "/desktop/", "/downloads/", "/pictures/",
-        "/movies/", "/music/", "/dropbox/", "/icloud drive/",
+        "documents", "desktop", "downloads", "pictures",
+        "movies", "music", "dropbox", "icloud", "onedrive", "google drive"
     ];
     for pattern in &user_data_patterns {
         if path_lower.contains(pattern) {
-            return IndexedFile {
-                path: path.to_string(),
-                size_bytes: get_size(p),
-                category: FileCategory::UserData,
-                app_owner: None,
-                is_safe_to_delete: false,
-                reason: "User data directory — Alto will never touch this.".to_string(),
-            };
+            // Check if it's actually in a safe place (like a Cache folder inside a user dir)
+            if !path_lower.contains("cache") && !path_lower.contains("temp") {
+                return IndexedFile {
+                    path: path.to_string(),
+                    size_bytes: get_size(p),
+                    category: FileCategory::UserData,
+                    app_owner: None,
+                    is_safe_to_delete: false,
+                    reason: "User data directory — Alto will never touch this.".to_string(),
+                };
+            }
         }
     }
 
     // --- SAFE: Caches ---
-    if path_lower.contains("/library/caches/") || path_lower.contains("/caches/") {
-        let app_owner = extract_app_owner(&path_lower, "/library/caches/");
+    if path_lower.contains("cache") || path_lower.contains("localstorage") {
+        let app_owner = extract_app_owner(&path_lower);
         return IndexedFile {
             path: path.to_string(),
             size_bytes: get_size(p),
@@ -77,8 +87,8 @@ pub fn index_file(path: &str) -> IndexedFile {
     }
 
     // --- SAFE: Logs ---
-    if path_lower.contains("/library/logs/") || path_lower.ends_with(".log") {
-        let app_owner = extract_app_owner(&path_lower, "/library/logs/");
+    if path_lower.contains("logs") || path_lower.ends_with(".log") {
+        let app_owner = extract_app_owner(&path_lower);
         return IndexedFile {
             path: path.to_string(),
             size_bytes: get_size(p),
@@ -90,7 +100,12 @@ pub fn index_file(path: &str) -> IndexedFile {
     }
 
     // --- SAFE: Temp ---
-    if path_lower.starts_with("/tmp/") || path_lower.contains("/var/folders/") {
+    #[cfg(target_os = "macos")]
+    let is_temp = path_lower.starts_with("/tmp/") || path_lower.contains("/var/folders/");
+    #[cfg(target_os = "windows")]
+    let is_temp = path_lower.contains("\\temp\\") || path_lower.contains("\\tmp\\") || path_lower.contains("\\appdata\\local\\temp");
+
+    if is_temp {
         return IndexedFile {
             path: path.to_string(),
             size_bytes: get_size(p),
@@ -102,15 +117,16 @@ pub fn index_file(path: &str) -> IndexedFile {
     }
 
     // --- CAUTION: App Support ---
-    if path_lower.contains("/library/application support/") {
-        let app_owner = extract_app_owner(&path_lower, "/library/application support/");
+    let app_support_pattern = if cfg!(target_os = "macos") { "application support" } else { "appdata" };
+    if path_lower.contains(app_support_pattern) {
+        let app_owner = extract_app_owner(&path_lower);
         return IndexedFile {
             path: path.to_string(),
             size_bytes: get_size(p),
             category: FileCategory::AppSupport,
             app_owner: app_owner.clone(),
             is_safe_to_delete: false,
-            reason: format!("App support data{}. Deleting may break the app.", app_owner.map(|a| format!(" for {}", a)).unwrap_or_default()),
+            reason: format!("App data{}. Deleting may break the app.", app_owner.map(|a| format!(" for {}", a)).unwrap_or_default()),
         };
     }
 
@@ -134,12 +150,21 @@ fn get_size(p: &Path) -> u64 {
     std::fs::metadata(p).map(|m| m.len()).unwrap_or(0)
 }
 
-fn extract_app_owner(path: &str, after: &str) -> Option<String> {
-    if let Some(idx) = path.find(after) {
-        let rest = &path[idx + after.len()..];
-        let component = rest.split('/').next()?;
-        if !component.is_empty() {
-            return Some(component.to_string());
+fn extract_app_owner(path: &str) -> Option<String> {
+    // Platform-aware path separator
+    let sep = if path.contains('\\') { '\\' } else { '/' };
+    
+    let patterns = [
+        "application support", "caches", "logs", "appdata\\local", "appdata\\roaming"
+    ];
+
+    for pattern in &patterns {
+        if let Some(idx) = path.find(pattern) {
+            let rest = &path[idx + pattern.len()..];
+            let component = rest.trim_start_matches(sep).split(sep).next()?;
+            if !component.is_empty() && component.len() > 3 {
+                return Some(component.to_string());
+            }
         }
     }
     None

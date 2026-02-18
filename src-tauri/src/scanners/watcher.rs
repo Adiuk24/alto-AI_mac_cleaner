@@ -14,7 +14,10 @@ pub struct AppInstallPayload {
 }
 
 /// Suspicious file extensions that could indicate malware
-const SUSPICIOUS_EXT: &[&str] = &["dmg", "pkg", "sh", "command", "app", "deb", "run"];
+const SUSPICIOUS_EXT: &[&str] = &[
+    "dmg", "pkg", "sh", "command", "app", "deb", "run", // macOS/Linux
+    "exe", "msi", "bat", "ps1", "vbs", "js", "vbe", "jse", "wsf", "wsh" // Windows
+];
 
 pub fn start_watcher(app_handle: AppHandle) {
     thread::spawn(move || {
@@ -28,11 +31,29 @@ pub fn start_watcher(app_handle: AppHandle) {
             }
         };
 
-        // Watch /Applications — detect new app installs
-        let _ = watcher.watch(Path::new("/Applications"), RecursiveMode::NonRecursive);
-        println!("[Watcher] Watching /Applications");
+        // --- Platform Specific Watching ---
+        
+        #[cfg(target_os = "macos")]
+        {
+            let _ = watcher.watch(Path::new("/Applications"), RecursiveMode::NonRecursive);
+            println!("[Watcher] Watching /Applications");
+        }
 
-        // Watch ~/Downloads — detect new files (potential malware, new apps)
+        #[cfg(target_os = "windows")]
+        {
+            let program_files = [
+                Path::new("C:\\Program Files"),
+                Path::new("C:\\Program Files (x86)"),
+            ];
+            for path in program_files {
+                if path.exists() {
+                    let _ = watcher.watch(path, RecursiveMode::NonRecursive);
+                    println!("[Watcher] Watching {:?}", path);
+                }
+            }
+        }
+
+        // --- Common Paths ---
         if let Some(home) = dirs::home_dir() {
             let downloads = home.join("Downloads");
             if downloads.exists() {
@@ -40,11 +61,24 @@ pub fn start_watcher(app_handle: AppHandle) {
                 println!("[Watcher] Watching ~/Downloads");
             }
 
-            // Watch ~/Library/Application Support for app data changes
-            let app_support = home.join("Library").join("Application Support");
-            if app_support.exists() {
-                let _ = watcher.watch(&app_support, RecursiveMode::NonRecursive);
-                println!("[Watcher] Watching ~/Library/Application Support");
+            // macOS Specific App Support
+            #[cfg(target_os = "macos")]
+            {
+                let app_support = home.join("Library").join("Application Support");
+                if app_support.exists() {
+                    let _ = watcher.watch(&app_support, RecursiveMode::NonRecursive);
+                    println!("[Watcher] Watching ~/Library/Application Support");
+                }
+            }
+
+            // Windows Specific AppData
+            #[cfg(target_os = "windows")]
+            {
+                let appdata = home.join("AppData").join("Roaming");
+                if appdata.exists() {
+                    let _ = watcher.watch(&appdata, RecursiveMode::NonRecursive);
+                    println!("[Watcher] Watching ~/AppData/Roaming");
+                }
             }
         }
 
@@ -71,11 +105,19 @@ fn handle_new_file(app_handle: &AppHandle, path_buf: &PathBuf) {
     let ext = path_buf.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
     let name = path_buf.file_name().unwrap_or_default().to_string_lossy().to_string();
 
-    // 1. New .app in /Applications
-    if path_str.starts_with("/Applications") && ext == "app" {
+    // 1. New App Detection
+    let is_app_install_dir = if cfg!(target_os = "macos") {
+        path_str.starts_with("/Applications") && ext == "app"
+    } else if cfg!(target_os = "windows") {
+        (path_str.starts_with("C:\\Program Files") || path_str.starts_with("C:\\Program Files (x86)"))
+            && (ext == "exe" || path_buf.is_dir()) // On Windows, new folders in Program Files are also installs
+    } else {
+        false
+    };
+
+    if is_app_install_dir {
         println!("[Watcher] New app detected: {}", name);
 
-        // Record in MCP context store
         let mut ctx = ContextStore::load();
         ctx.record_system_event(SystemEvent {
             timestamp: chrono::Local::now().to_rfc3339(),
@@ -91,11 +133,10 @@ fn handle_new_file(app_handle: &AppHandle, path_buf: &PathBuf) {
         });
     }
     // 2. New file in Downloads — flag suspicious types
-    else if path_str.contains("/Downloads/") {
+    else if path_str.to_lowercase().contains("downloads") {
         let is_suspicious = SUSPICIOUS_EXT.contains(&ext.as_str());
         println!("[Watcher] New download: {} (suspicious: {})", name, is_suspicious);
 
-        // Record in MCP context store
         let mut ctx = ContextStore::load();
         let event_type = if is_suspicious { "suspicious_download" } else { "file_downloaded" }.to_string();
         ctx.record_system_event(SystemEvent {
@@ -105,7 +146,6 @@ fn handle_new_file(app_handle: &AppHandle, path_buf: &PathBuf) {
             path: path_str.clone(),
         });
 
-        // Always emit event, frontend/AI decides what to do
         let _ = app_handle.emit("system-event", AppInstallPayload {
             name,
             path: path_str,
