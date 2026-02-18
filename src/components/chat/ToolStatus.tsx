@@ -28,11 +28,14 @@ export function ToolStatus({ toolName, state }: ToolStatusProps) {
                 ${state === 'failed' ? 'bg-red-500/10 border-red-500/30 text-red-200' : ''}
             `}
         >
-            {state === 'running' ? (
-                <Loader2 size={16} className="animate-spin text-blue-400" />
-            ) : (
-                <CheckCircle2 size={16} className="text-emerald-400" />
-            )}
+            <div className="flex items-center gap-2">
+                {state === 'running' ? (
+                    <Loader2 size={14} className="animate-spin text-blue-400" />
+                ) : (
+                    <CheckCircle2 size={14} className="text-emerald-400" />
+                )}
+                <Icon size={14} className="opacity-50" />
+            </div>
 
             <span className="text-xs font-mono tracking-wide">
                 {state === 'running' ? 'EXECUTING: ' : 'COMPLETED: '}

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Sparkles, BrainCircuit } from 'lucide-react';
+import { BrainCircuit } from 'lucide-react';
 
 export function ThinkingIndicator() {
     return (
