@@ -14,6 +14,15 @@
 
 ---
 
+## 📖 Project Documentation (Wiki)
+Explore our comprehensive documentation to learn more about Alto:
+-   **[Wiki Home](docs/Home.md)**: Project overview and vision.
+-   **[Roadmap](docs/Roadmap.md)**: Short and long-term goals.
+-   **[Architecture](docs/Architecture.md)**: Technical deep dive into MCP and Agentic Flow.
+-   **[User Guide](docs/User-Guide.md)**: Comprehensive manual for all features.
+
+---
+
 ## 🚀 Key Features (v2.1.0 "Agentic Edition")
 
 *   **🧠 Agentic AI Assistant**: A truly proactive assistant that monitors your Mac/PC in real-time. It doesn't just chat; it executes real tasks and reports actual results.
