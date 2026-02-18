@@ -41,7 +41,7 @@ export function Optimization() {
 
             <h2 className="text-3xl font-bold mb-3 text-center">Optimization</h2>
             <p className="text-white/50 mb-10 max-w-md text-center leading-relaxed">
-                Boost your Mac's performance by freeing up memory and clearing DNS cache.
+                Boost your System's performance by freeing up memory and clearing DNS cache.
             </p>
 
             {/* Pre-scan feature cards */}
@@ -79,15 +79,15 @@ export function Optimization() {
                             onClick={() => !isDone && !isRunning && runTask(task.id)}
                             disabled={isRunning || (runningTask !== null && !isDone)}
                             className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${isDone
-                                    ? 'bg-emerald-500/5 border-emerald-500/20'
-                                    : isRunning
-                                        ? 'bg-yellow-500/5 border-yellow-500/20'
-                                        : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-yellow-500/30'
+                                ? 'bg-emerald-500/5 border-emerald-500/20'
+                                : isRunning
+                                    ? 'bg-yellow-500/5 border-yellow-500/20'
+                                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-yellow-500/30'
                                 } disabled:cursor-not-allowed`}
                         >
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isDone
-                                    ? 'bg-emerald-500/20'
-                                    : 'bg-yellow-500/10 border border-yellow-500/20'
+                                ? 'bg-emerald-500/20'
+                                : 'bg-yellow-500/10 border border-yellow-500/20'
                                 }`}>
                                 {isDone
                                     ? <CheckCircle size={18} className="text-emerald-400" />

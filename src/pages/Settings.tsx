@@ -194,7 +194,7 @@ export function Settings() {
                 {/* Info Footer */}
                 <div className="flex justify-between items-center text-white/30 text-sm px-4">
                     <p>Alto 0.1.0-alpha</p>
-                    <p>Mac Assessment & Logic Tool</p>
+                    <p>System Assessment & Logic Tool</p>
                 </div>
             </div>
         </div>

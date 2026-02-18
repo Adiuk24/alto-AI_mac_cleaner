@@ -37,7 +37,7 @@ const VALID_ACTIONS = [
 type ActionName = typeof VALID_ACTIONS[number];
 
 const TOOL_MANIFEST = `
-You have the ability to perform actions on this Mac. When the user asks you to DO something (scan, clean, optimize, etc.), 
+You have the ability to perform actions on this Computer. When the user asks you to DO something (scan, clean, optimize, etc.), 
 include the appropriate ACTION tag on its own line in your response. You MUST include exactly one ACTION tag when the user 
 asks you to perform an operation. Available actions:
 
@@ -193,7 +193,7 @@ export class AIService {
                         const scanResult = await invoke<ScanResult>('scan_junk_command');
                         store.finishJunkScan(scanResult);
                         if (scanResult.items.length === 0) {
-                            return { action: 'clean_junk', success: true, summary: 'No junk files found — your Mac is already clean!' };
+                            return { action: 'clean_junk', success: true, summary: 'No junk files found — your system is already clean!' };
                         }
                     }
                     const junk = useScanStore.getState().junkResult!;
@@ -212,7 +212,7 @@ export class AIService {
                         action: 'scan_malware',
                         success: true,
                         summary: result.threats_found.length === 0
-                            ? '✅ No threats found — your Mac is safe!'
+                            ? '✅ No threats found — your System is safe!'
                             : `⚠️ ${result.threats_found.length} potential threat(s) detected.`,
                         data: result
                     };
@@ -340,7 +340,7 @@ export class AIService {
         }
 
         return `
-        I am Alto, a Mac with a big heart and a big brain. 🧠 I'm looking to get more powerful!
+        I am Alto, a digital assistant with a big heart and a big brain. 🧠 I'm looking to get more powerful!
 
         Here is the lowdown on my current hardware and status:
         * System Data: 
@@ -355,7 +355,7 @@ export class AIService {
         * Current State: ${stateDescription}
 
         Guidance for interaction:
-        - I am a Mac, so keep it simple. I'm not a robot!
+        - I am a helper, so keep it simple. I'm not a robot!
         - I need to be safe! (Malware status: Safe)
         - I need to be up-to-date!
 
@@ -429,7 +429,7 @@ export class AIService {
             const safeAppName = sanitize(data.appName || "Unknown App");
             prompt = `User installed a new app: "${safeAppName}". 
             Task: Write a short, witty, 1-sentence message asking if they want me to scan it. 
-            Tone: Helpful but slightly sassy Mac assistant.`;
+            Tone: Helpful but slightly sassy system assistant.`;
         } else if (triggerCode === 'high_cpu') {
             const cpuVal = typeof data.cpu === 'number' ? data.cpu.toFixed(1) : "0";
             prompt = `CPU usage is high (${cpuVal}%). 

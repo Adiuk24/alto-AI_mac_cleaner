@@ -128,7 +128,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.3 }}
                         >
-                            Start with a nice and thorough scan of your Mac.
+                            Start with a nice and thorough scan of your System.
                         </motion.p>
 
                         {/* Centered pill scan button */}

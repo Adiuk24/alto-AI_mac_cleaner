@@ -26,7 +26,7 @@ export function Assistant() {
         {
             id: '1',
             role: 'assistant',
-            text: "Hello! I'm ready to help you clean and optimize your Mac.",
+            text: "Hello! I'm ready to help you clean and optimize your system.",
             timestamp: new Date()
         }
     ]);
@@ -163,7 +163,7 @@ export function Assistant() {
                 <div>
                     <h1 className="text-2xl font-bold text-white">AI Assistant</h1>
                     <p className="text-white/50 text-sm flex items-center gap-2">
-                        Always here to help optimize your Mac
+                        Always here to help optimize your System
                         {isExecutingAction && (
                             <span className="inline-flex items-center gap-1 text-amber-400 text-xs animate-pulse">
                                 <Zap size={12} /> Executing...
@@ -252,7 +252,7 @@ export function Assistant() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Try: 'Scan my Mac for junk' or 'Optimize my speed'..."
+                            placeholder="Try: 'Scan my system for junk' or 'Optimize my speed'..."
                             className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500/50 focus:bg-black/40 transition-all font-medium"
                             autoFocus
                         />

@@ -61,9 +61,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                             </div>
 
                             <div className="space-y-4">
-                                <h1 className="text-3xl font-bold tracking-tight">Mac Cleaner AI</h1>
+                                <h1 className="text-3xl font-bold tracking-tight">System Cleaner AI</h1>
                                 <p className="text-white/60 text-lg leading-relaxed">
-                                    Your intelligent assistant for a faster, cleaner, and safer Mac.
+                                    Your intelligent assistant for a faster, cleaner, and safer system.
                                 </p>
                             </div>
 
@@ -130,7 +130,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                             <div className="space-y-4">
                                 <h2 className="text-3xl font-bold">All Systems Operational</h2>
                                 <p className="text-white/60">
-                                    Mac Cleaner AI is ready to optimize your system.
+                                    Alto is ready to optimize your system.
                                 </p>
                             </div>
 

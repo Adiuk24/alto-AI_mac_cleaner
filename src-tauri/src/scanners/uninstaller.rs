@@ -1,7 +1,14 @@
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-use walkdir::WalkDir;
+#[cfg(target_os = "macos")]
 use crate::helper_client::{self, Command};
+#[cfg(target_os = "macos")]
+use walkdir::WalkDir;
+
+#[cfg(target_os = "windows")]
+use winreg::enums::*;
+#[cfg(target_os = "windows")]
+use winreg::RegKey;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct AppInfo {
@@ -13,6 +20,7 @@ pub struct AppInfo {
     pub last_used: Option<u64>,
 }
 
+#[cfg(target_os = "macos")]
 pub fn scan_apps() -> Vec<AppInfo> {
     let mut apps = Vec::new();
     let dirs_to_scan = vec![
@@ -53,6 +61,43 @@ pub fn scan_apps() -> Vec<AppInfo> {
     apps
 }
 
+#[cfg(target_os = "windows")]
+pub fn scan_apps() -> Vec<AppInfo> {
+    let mut apps = Vec::new();
+    
+    // Scan both HKLM and HKCU
+    let roots = vec![HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER];
+    let subkey = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall";
+
+    for root in roots {
+        let hklm = RegKey::predef(root);
+        if let Ok(uninstall) = hklm.open_subkey_with_flags(subkey, KEY_READ) {
+            for name in uninstall.enum_keys().map(|x| x.unwrap_or_default()) {
+                if let Ok(app_key) = uninstall.open_subkey(&name) {
+                    let display_name: String = app_key.get_value("DisplayName").unwrap_or_default();
+                    if display_name.is_empty() { continue; }
+
+                    let uninstall_string: String = app_key.get_value("UninstallString").unwrap_or_default();
+                    let install_location: String = app_key.get_value("InstallLocation").unwrap_or_default();
+                    let display_icon: String = app_key.get_value("DisplayIcon").unwrap_or_default();
+
+                    apps.push(AppInfo {
+                        name: display_name,
+                        path: uninstall_string, // Use uninstall string as "path" for action
+                        bundle_id: Some(name), // Use Registry Key Name as ID
+                        icon_path: if display_icon.is_empty() { None } else { Some(display_icon) },
+                        size_bytes: 0, // Hard to get accurate size from registry
+                        last_used: None,
+                    });
+                }
+            }
+        }
+    }
+
+    apps
+}
+
+#[cfg(target_os = "macos")]
 fn get_bundle_id(app_path: &Path) -> Option<String> {
     let plist_path = app_path.join("Contents/Info.plist");
     let file = std::fs::File::open(plist_path).ok()?;
@@ -63,6 +108,7 @@ fn get_bundle_id(app_path: &Path) -> Option<String> {
         .map(|s| s.to_string())
 }
 
+#[cfg(target_os = "macos")]
 fn scan_leftovers(bundle_id: &str) -> Vec<PathBuf> {
     let mut leftovers = Vec::new();
     let home = dirs::home_dir().unwrap();
@@ -94,6 +140,7 @@ fn scan_leftovers(bundle_id: &str) -> Vec<PathBuf> {
     leftovers
 }
 
+#[cfg(target_os = "macos")]
 pub async fn uninstall_app(path: &str) -> Result<(), String> {
     let app_path = Path::new(path);
     
@@ -132,4 +179,30 @@ pub async fn uninstall_app(path: &str) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[cfg(target_os = "windows")]
+pub async fn uninstall_app(path: &str) -> Result<(), String> {
+    // Path here is the UninstallString from registry
+    // e.g. "MsiExec.exe /I{...}" or "C:\Program Files\...\uninstall.exe"
+    
+    // Split command and args loosely
+    // This is naive; Windows command parsing is complex.
+    // Ideally we shell execute it.
+    
+    use std::process::Command;
+    
+    println!("Executing uninstall string: {}", path);
+
+    // We use cmd /C to handle potential shell built-ins or complex strings
+    let status = Command::new("cmd")
+        .args(["/C", path])
+        .status()
+        .map_err(|e| e.to_string())?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("Uninstall exited with code: {:?}", status.code()))
+    }
 }

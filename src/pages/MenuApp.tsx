@@ -71,8 +71,8 @@ export function MenuApp() {
                 </div>
             </div>
 
-            {/* Mac Overview */}
-            <h2 className="text-sm font-semibold mb-3 text-white/90">Mac Overview</h2>
+            {/* System Overview */}
+            <h2 className="text-sm font-semibold mb-3 text-white/90">System Overview</h2>
 
             {/* Protection Widget */}
             <div className="bg-[#2a1d45] rounded-xl p-4 border border-white/5 mb-3 relative group">
@@ -106,7 +106,7 @@ export function MenuApp() {
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <HardDrive size={18} className="text-white/70" />
-                            <span className="text-sm font-medium">Macintosh HD</span>
+                            <span className="text-sm font-medium">Main Drive</span>
                         </div>
                     </div>
                     <div className="text-xs text-[#fbd349] mb-1 font-medium">

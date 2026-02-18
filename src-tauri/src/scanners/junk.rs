@@ -6,7 +6,7 @@ const MAX_DEPTH: u32 = 50;
 // const MAX_ENTRIES: usize = 2000; // Removed limit to ensure full scan
 
 /// Path templates relative to home (no leading ~).
-/// Expanded list based on clean-my-mac-study and standard macOS cleaner targets.
+#[cfg(target_os = "macos")]
 const JUNK_TEMPLATES: &[&str] = &[
     // User Caches
     "Library/Caches",
@@ -19,7 +19,7 @@ const JUNK_TEMPLATES: &[&str] = &[
     "Library/Application Support/BraveSoftware/Brave-Browser/Default/Code Cache",
     "Library/Caches/com.apple.Safari",
     "Library/Containers/com.apple.Safari/Data/Library/Caches",
-    "Library/Application Support/Firefox/Profiles", // Logic needs to find Cache in profiles, but this is a start
+    "Library/Application Support/Firefox/Profiles", 
 
     // App Caches & Logs
     "Library/Application Support/Slack/Cache",
@@ -44,29 +44,64 @@ const JUNK_TEMPLATES: &[&str] = &[
     // System/User Junk
     "Library/Application Support/CrashReporter",
     ".Trash", // User Trash
-    "Downloads", // Optional: Some cleaners alert on old downloads, we scan but maybe should label differently? 
-                 // For now, let's NOT auto-scan Downloads as "Junk" to avoid accidents, unless detailed. 
-                 // Sticking to "Safe" junk.
     "Desktop", // Scan for loose screenshots
     "Desktop/screenshots", // Common custom folder
 ];
 
+#[cfg(target_os = "windows")]
+const JUNK_TEMPLATES: &[&str] = &[
+    // System/User Temp
+    "AppData\\Local\\Temp",
+    
+    // Browsers
+    "AppData\\Local\\Google\\Chrome\\User Data\\Default\\Cache",
+    "AppData\\Local\\Google\\Chrome\\User Data\\Default\\Code Cache",
+    "AppData\\Local\\BraveSoftware\\Brave-Browser\\User Data\\Default\\Cache",
+    "AppData\\Local\\Microsoft\\Edge\\User Data\\Default\\Cache",
+    "AppData\\Local\\Mozilla\\Firefox\\Profiles", // Scan for cache2/entries
+
+    // Apps
+    "AppData\\Local\\Slack\\Cache",
+    "AppData\\Roaming\\Slack\\Cache",
+    "AppData\\Roaming\\Code\\Cache",
+    "AppData\\Roaming\\Code\\CachedData",
+    "AppData\\Roaming\\Discord\\Cache",
+    "AppData\\Roaming\\Discord\\Code Cache",
+    "AppData\\Roaming\\Zoom\\bin\\logs",
+
+    // Dev
+    ".npm\\_cacache",
+    ".pnpm-store",
+
+    // Recycle Bin (Handling actual recycle bin on Windows requires Shell API, likely out of scope for simple file scan, keeping commented)
+    // "$Recycle.Bin", 
+];
+
 fn category_name(tpl: &str) -> &'static str {
+    // Shared Logic
     if tpl.contains("Chrome") { "Chrome Cache" }
     else if tpl.contains("Brave") { "Brave Cache" }
     else if tpl.contains("Firefox") { "Firefox Cache" }
-    else if tpl.contains("Safari") { "Safari Cache" }
     else if tpl.contains("Slack") { "Slack Cache" }
     else if tpl.contains("Discord") { "Discord Cache" }
-    else if tpl.contains("Code/") { "VS Code Cache" }
+    else if tpl.contains("Code") { "VS Code Cache" } // "Code/" or "Code\\"
     else if tpl.contains("Spotify") { "Spotify Cache" }
     else if tpl.contains("Zoom") { "Zoom Logs" }
     else if tpl.contains(".npm") || tpl.contains(".yarn") || tpl.contains("pnpm") { "Dev Package Cache" }
+    
+    // macOS Specific
+    else if tpl.contains("Safari") { "Safari Cache" }
     else if tpl.contains("Xcode") { "Xcode Data" }
     else if tpl.contains("CrashReporter") { "Crash Reports" }
     else if tpl.contains(".Trash") { "Trash Bin" }
-    else if tpl.contains("Logs") { "User Logs" }
+    else if tpl.contains("Library/Logs") { "User Logs" }
     else if tpl.contains("Desktop") { "Screenshots" }
+    
+    // Windows Specific
+    else if tpl.contains("Edge") { "Edge Cache" }
+    else if tpl.contains("Temp") { "Temporary Files" }
+    else if tpl.contains("Recycle") { "Recycle Bin" }
+    
     else { "User Caches" }
 }
 
@@ -82,6 +117,8 @@ fn is_whitelisted(file_name: &str) -> bool {
         "User Data", // Protect Chrome User Data root if scanned
         "bookmarks", // Protect bookmarks
         "Login Data", // Protect saved passwords
+        "desktop.ini", // Windows system file
+        "ntuser.dat", // Windows registry
     ];
     whitelist.contains(&file_name)
 }

@@ -67,7 +67,7 @@ export function TrashBins() {
 
                 <h2 className="text-3xl font-bold mb-3">Trash Bins</h2>
                 <p className="text-white/50 mb-10 max-w-md leading-relaxed">
-                    Empty all of the available Trash Bins on your Mac, including Mail and photo library trash.
+                    Empty all of the available Trash Bins on your system, including Mail and photo library trash.
                 </p>
 
                 {/* Feature cards */}

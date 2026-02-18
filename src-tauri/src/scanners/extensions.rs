@@ -11,6 +11,9 @@ pub struct ExtensionItem {
     pub enabled: bool,
 }
 
+
+
+#[cfg(target_os = "macos")]
 pub fn scan_extensions() -> Vec<ExtensionItem> {
     let mut items = Vec::new();
     let home = home_dir().unwrap_or_else(|| PathBuf::from("/"));
@@ -31,8 +34,48 @@ pub fn scan_extensions() -> Vec<ExtensionItem> {
     items
 }
 
-use crate::helper_client::{self, Command};
+#[cfg(target_os = "windows")]
+pub fn scan_extensions() -> Vec<ExtensionItem> {
+    let mut items = Vec::new();
 
+    // 1. Registry Run Keys (HKCU)
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    if let Ok(run) = hkcu.open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Run") {
+        for (name, value) in run.enum_values().map(|x| x.unwrap_or_default()) {
+             items.push(ExtensionItem {
+                 path: value.to_string(), // The command
+                 name,
+                 kind: "Registry Startup".to_string(), 
+                 enabled: true,
+             });
+        }
+    }
+
+    // 2. Startup Folder (User)
+    // %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+    if let Some(home) = home_dir() {
+        let startup = home.join("AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup");
+        if startup.exists() {
+             for entry in WalkDir::new(&startup).max_depth(1).into_iter().filter_map(|e| e.ok()) {
+                let path = entry.path();
+                if path.is_file() { // .lnk, .bat, .exe
+                     let name = path.file_stem().unwrap_or_default().to_string_lossy().to_string();
+                     items.push(ExtensionItem {
+                         path: path.to_string_lossy().to_string(),
+                         name,
+                         kind: "Startup Folder".to_string(),
+                         enabled: true, 
+                     });
+                }
+            }
+        }
+    }
+
+    items
+}
+
+#[cfg(target_os = "macos")]
+use crate::helper_client::{self, Command};
 fn scan_dir(root: PathBuf, kind: &str, items: &mut Vec<ExtensionItem>) {
     if !root.exists() { return; }
 
@@ -50,6 +93,7 @@ fn scan_dir(root: PathBuf, kind: &str, items: &mut Vec<ExtensionItem>) {
     }
 }
 
+#[cfg(target_os = "macos")]
 pub async fn remove_extension(path_str: String) -> Result<(), String> {
     let path = Path::new(&path_str);
     if !path.exists() {
@@ -78,4 +122,26 @@ pub async fn remove_extension(path_str: String) -> Result<(), String> {
     } else {
         Err(res.message)
     }
+}
+
+#[cfg(target_os = "windows")]
+pub async fn remove_extension(name_or_path: String) -> Result<(), String> {
+    // This is tricky because we mixed Registry names and File paths.
+    // For now, we try to delete file if it looks like a path, else Registry value.
+    
+    let path = Path::new(&name_or_path);
+    if path.exists() {
+         // It's a file (Startup folder)
+         std::fs::remove_file(path).map_err(|e| e.to_string())?;
+         return Ok(());
+    }
+
+    // Assume Registry Key in HKCU Run
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let run = hkcu.open_subkey_with_flags("Software\\Microsoft\\Windows\\CurrentVersion\\Run", KEY_WRITE)
+        .map_err(|e| e.to_string())?;
+    
+    run.delete_value(&name_or_path).map_err(|e| e.to_string())?;
+
+    Ok(())
 }
