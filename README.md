@@ -89,7 +89,7 @@ If you see this error, it is because the app is not notarized by Apple yet. To f
 1. Move **Alto** to your `Applications` folder.
 2. Open Terminal and run:
    ```bash
-   sudo xattr -rd com.apple.quarantine /Applications/Alto.app
+   sudo /usr/bin/xattr -rd com.apple.quarantine /Applications/Alto.app
    ```
 3. Enter your password, and then you can open the app!
 
