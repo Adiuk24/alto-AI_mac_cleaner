@@ -2,7 +2,7 @@
 name = "alto"
 version = "0.1.0"
 description = "Alto: Premium AI Mac Cleaner"
-authors = ["you"]
+authors = ["Arif Adito"]
 edition = "2021"
 rust-version = "1.70"
 default-run = "alto"

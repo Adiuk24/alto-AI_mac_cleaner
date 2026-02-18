@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "description": "AI Powered Mac Cleaner & Optimizer",
+  "author": "Arif Adito",
   "type": "module",
   "scripts": {
     "dev": "vite",

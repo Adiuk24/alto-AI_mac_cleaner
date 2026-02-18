@@ -49,6 +49,7 @@
     "active": true,
     "targets": "all",
     "category": "Utility",
+    "copyright": "Copyright © 2026 Adioris ltd. All rights reserved.",
     "icon": [
       "icons/icon.png"
     ],
