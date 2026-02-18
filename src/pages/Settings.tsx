@@ -5,8 +5,10 @@ import { aiService, type AIConfig, type TestConnectionResult } from '../services
 import {
     Save, Cpu, Wifi, WifiOff, Loader2, User, Shield,
     Database, CheckCircle2, ChevronDown, Sparkles, FileText,
-    Activity, RefreshCw, Trash2
+    Activity, RefreshCw, Trash2, Download, ArrowUpCircle
 } from 'lucide-react';
+import { check } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 import { AltoAvatar } from '../components/AltoAvatar';
 
 const USER_PROFILE_KEY = 'alto_user_profile_v1';
@@ -99,6 +101,13 @@ export function Settings() {
     const [profile, setProfile] = useState<UserProfile>({ name: '', role: 'Mac User' });
     const [contextStore, setContextStore] = useState<ContextStore | null>(null);
     const [contextPath] = useState(`${navigator.platform.includes('Mac') ? '~' : '/home/user'}/.alto/context.json`);
+    const [updateStatus, setUpdateStatus] = useState<{
+        checking: boolean;
+        available: boolean;
+        version?: string;
+        error?: string;
+        progress?: number;
+    }>({ checking: false, available: false });
 
     useEffect(() => {
         setConfig(aiService.getConfig());
@@ -134,6 +143,51 @@ export function Settings() {
         localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profile));
         setStatus('All settings saved!');
         setTimeout(() => setStatus(''), 2500);
+    };
+
+    const handleCheckUpdates = async () => {
+        setUpdateStatus({ checking: true, available: false });
+        try {
+            const update = await check();
+            if (update) {
+                setUpdateStatus({
+                    checking: false,
+                    available: true,
+                    version: update.version
+                });
+
+                if (confirm(`A new version (${update.version}) is available. Would you like to install it now?`)) {
+                    setUpdateStatus(prev => ({ ...prev, checking: true }));
+                    let downloaded = 0;
+                    let contentLength = 0;
+                    await update.downloadAndInstall((event) => {
+                        switch (event.event) {
+                            case 'Started':
+                                contentLength = event.data.contentLength || 0;
+                                console.log(`started downloading ${contentLength} bytes`);
+                                break;
+                            case 'Progress':
+                                downloaded += event.data.chunkLength;
+                                const progress = contentLength ? (downloaded / contentLength) * 100 : 0;
+                                setUpdateStatus(prev => ({ ...prev, progress }));
+                                break;
+                            case 'Finished':
+                                console.log('download finished');
+                                break;
+                        }
+                    });
+
+                    await relaunch();
+                }
+            } else {
+                setUpdateStatus({ checking: false, available: false });
+                setStatus('Alto is up to date!');
+                setTimeout(() => setStatus(''), 3000);
+            }
+        } catch (e: any) {
+            console.error('Update check failed:', e);
+            setUpdateStatus({ checking: false, available: false, error: e.message });
+        }
     };
 
     const handleTestConnection = async () => {
@@ -442,6 +496,72 @@ export function Settings() {
                                 </button>
                             )}
                         </div>
+                    </div>
+                </SectionCard>
+
+                {/* ── Software Update ── */}
+                <SectionCard>
+                    <SectionHeader icon={<ArrowUpCircle size={16} />} title="Software Update" subtitle="Keep Alto up to date with the latest features" accent="blue" />
+                    <div className="p-6 flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-500/10 rounded-lg">
+                                    <ArrowUpCircle size={20} className="text-blue-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-white">Check for Updates</p>
+                                    <p className="text-xs text-white/40">Current Version: v2.1.0</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleCheckUpdates}
+                                disabled={updateStatus.checking}
+                                className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${updateStatus.checking
+                                        ? 'bg-white/5 text-white/30 cursor-not-allowed'
+                                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                                    }`}
+                            >
+                                {updateStatus.checking ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                                {updateStatus.checking ? 'Checking...' : 'Check Now'}
+                            </button>
+                        </div>
+
+                        {updateStatus.available && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex flex-col gap-3"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-1.5 bg-emerald-500/20 rounded-lg text-emerald-400">
+                                        <Download size={16} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold text-emerald-400">Update Available! (v{updateStatus.version})</p>
+                                        <p className="text-xs text-white/50">A new build has been pushed to GitHub.</p>
+                                    </div>
+                                </div>
+                                {updateStatus.progress !== undefined && (
+                                    <div className="space-y-1.5">
+                                        <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                                            <motion.div
+                                                className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${updateStatus.progress}%` }}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-white/30 text-right">{Math.round(updateStatus.progress)}% downloaded</p>
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+
+                        {updateStatus.error && (
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex items-center gap-3">
+                                <Activity size={16} className="text-red-400" />
+                                <p className="text-xs text-red-300/80">{updateStatus.error}</p>
+                            </div>
+                        )}
                     </div>
                 </SectionCard>
 
