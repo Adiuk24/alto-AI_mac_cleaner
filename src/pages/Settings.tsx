@@ -510,15 +510,15 @@ export function Settings() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-semibold text-white">Check for Updates</p>
-                                    <p className="text-xs text-white/40">Current Version: v2.1.0</p>
+                                    <p className="text-xs text-white/40">Current Version: v2.1.2</p>
                                 </div>
                             </div>
                             <button
                                 onClick={handleCheckUpdates}
                                 disabled={updateStatus.checking}
                                 className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${updateStatus.checking
-                                        ? 'bg-white/5 text-white/30 cursor-not-allowed'
-                                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                                    ? 'bg-white/5 text-white/30 cursor-not-allowed'
+                                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20'
                                     }`}
                             >
                                 {updateStatus.checking ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
