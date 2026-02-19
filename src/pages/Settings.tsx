@@ -510,7 +510,7 @@ export function Settings() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-semibold text-white">Check for Updates</p>
-                                    <p className="text-xs text-white/40">Current Version: v2.1.2</p>
+                                    <p className="text-xs text-white/40">Current Version: v2.1.3</p>
                                 </div>
                             </div>
                             <button

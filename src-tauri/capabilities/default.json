@@ -11,6 +11,12 @@
     "core:window:allow-set-title",
     "core:event:default",
     "core:app:default",
-    "notification:default"
+    "notification:default",
+    "updater:default",
+    "updater:allow-check",
+    "updater:allow-download-and-install",
+    "process:default",
+    "process:allow-restart",
+    "shell:default"
   ]
 }
