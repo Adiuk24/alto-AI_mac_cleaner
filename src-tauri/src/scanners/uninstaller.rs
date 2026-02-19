@@ -110,28 +110,56 @@ fn get_bundle_id(app_path: &Path) -> Option<String> {
 }
 
 #[cfg(target_os = "macos")]
-fn scan_leftovers(bundle_id: &str) -> Vec<PathBuf> {
+pub fn scan_leftovers(bundle_id: &str) -> Vec<PathBuf> {
     let mut leftovers = Vec::new();
     let home = dirs::home_dir().unwrap();
     let library = home.join("Library");
 
+    // 1. Standard Heuristic Scan (Regex-like)
     let search_paths = vec![
         library.join("Application Support"),
         library.join("Caches"),
         library.join("Preferences"),
         library.join("Logs"),
         library.join("Saved Application State"),
+        library.join("Containers"),
     ];
 
     for base in search_paths {
         if let Ok(entries) = std::fs::read_dir(&base) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                // Simple check: does filename contain bundle_id?
-                // E.g. com.google.Chrome -> ~/Library/Caches/com.google.Chrome
                 if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
-                    if name.contains(bundle_id) {
+                    if name.to_lowercase().contains(&bundle_id.to_lowercase()) {
                         leftovers.push(path);
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Database Rules Scan (app_rules.json)
+    // We include the JSON at compile time for simplicity/performance
+    const RULES_JSON: &str = include_str!("../data/app_rules.json");
+    if let Ok(rules) = serde_json::from_str::<serde_json::Value>(RULES_JSON) {
+        if let Some(app_rule) = rules.get(bundle_id) {
+            if let Some(paths) = app_rule.get("paths").and_then(|p| p.as_array()) {
+                for rule_path_val in paths {
+                    if let Some(rule_path_str) = rule_path_val.as_str() {
+                        // Expand ~ to home dir
+                        let expanded = if rule_path_str.starts_with("~") {
+                            rule_path_str.replace("~", &home.to_string_lossy())
+                        } else {
+                            rule_path_str.to_string()
+                        };
+                        
+                        let path = PathBuf::from(expanded);
+                        if path.exists() {
+                             // Avoid duplicates
+                             if !leftovers.contains(&path) {
+                                 leftovers.push(path);
+                             }
+                        }
                     }
                 }
             }

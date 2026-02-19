@@ -6,6 +6,7 @@ pub struct ScannedItem {
     pub size_bytes: u64,
     pub category_name: String,
     pub is_directory: bool,
+    pub accessed_date: Option<i64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -28,3 +29,7 @@ pub mod updater;
 pub mod shredder;
 pub mod mail;
 pub mod extensions;
+pub mod maintenance;
+pub mod privacy;
+pub mod monitor;
+pub mod process;

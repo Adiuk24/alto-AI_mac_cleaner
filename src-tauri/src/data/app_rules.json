@@ -1,0 +1,44 @@
+{
+    "com.microsoft.Word": {
+        "paths": [
+            "~/Library/Group Containers/UBF8T346G9.Office",
+            "~/Library/Application Support/Microsoft/Office",
+            "~/Library/Preferences/com.microsoft.Word.plist"
+        ]
+    },
+    "com.microsoft.Excel": {
+        "paths": [
+            "~/Library/Group Containers/UBF8T346G9.Office",
+            "~/Library/Application Support/Microsoft/Office",
+            "~/Library/Preferences/com.microsoft.Excel.plist"
+        ]
+    },
+    "com.google.Chrome": {
+        "paths": [
+            "~/Library/Application Support/Google/Chrome",
+            "~/Library/Caches/Google/Chrome",
+            "~/Library/Google/GooglesoftwareUpdate"
+        ]
+    },
+    "com.spotify.client": {
+        "paths": [
+            "~/Library/Application Support/Spotify",
+            "~/Library/Caches/com.spotify.client",
+            "~/Library/Saved Application State/com.spotify.client.savedState"
+        ]
+    },
+    "us.zoom.xos": {
+        "paths": [
+            "~/Library/Application Support/zoom.us",
+            "~/Library/Caches/us.zoom.xos",
+            "~/Library/Logs/zoom.us",
+            "~/Library/Preferences/us.zoom.xos.plist"
+        ]
+    },
+    "ru.keepcoder.Telegram": {
+        "paths": [
+            "~/Library/Group Containers/6N38VWS5BX.ru.keepcoder.Telegram",
+            "~/Library/Application Support/Telegram Desktop"
+        ]
+    }
+}

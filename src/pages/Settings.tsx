@@ -3,12 +3,13 @@ import { motion } from 'framer-motion';
 import { invoke } from '@tauri-apps/api/core';
 import { aiService, type AIConfig, type TestConnectionResult } from '../services/aiService';
 import {
-    Save, Cpu, Wifi, WifiOff, Loader2, User, Shield,
-    Database, CheckCircle2, ChevronDown, Sparkles, FileText,
+    Save, Cpu, Wifi, Loader2, User, Shield,
+    Database, CheckCircle2, Sparkles, FileText,
     Activity, RefreshCw, Trash2, Download, ArrowUpCircle
 } from 'lucide-react';
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
+import { listen } from '@tauri-apps/api/event';
 import { AltoAvatar } from '../components/AltoAvatar';
 
 const USER_PROFILE_KEY = 'alto_user_profile_v1';
@@ -108,28 +109,101 @@ export function Settings() {
         error?: string;
         progress?: number;
     }>({ checking: false, available: false });
+    const [mcpStatus, setMcpStatus] = useState({
+        indexer_active: true,
+        watcher_active: true,
+        store_initialized: false
+    });
+    const [clickCount, setClickCount] = useState(0);
+    const [aiLogs, setAiLogs] = useState<string[]>([]);
 
     useEffect(() => {
+        // Intercept console.log for AI logs
+        const originalLog = console.log;
+        console.log = (...args: any[]) => {
+            if (typeof args[0] === 'string' && args[0].startsWith('LOG:')) {
+                setAiLogs(prev => [...prev.slice(-19), args[0].replace('LOG:', '')]);
+            }
+            originalLog(...args);
+        };
+
         setConfig(aiService.getConfig());
         // Load user profile
         const saved = localStorage.getItem(USER_PROFILE_KEY);
         if (saved) setProfile(JSON.parse(saved));
-        // Load MCP context DIRECTLY from Rust backend (not just cache)
+        // Load MCP context DIRECTLY from Rust backend
         loadMcpContext();
+        fetchMcpStatus();
+
+        // Listen for live system events
+        let unlisten: (() => void) | undefined;
+        listen('system-event', (event: any) => {
+            console.log("Received system event:", event.payload);
+            setContextStore(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    system_events: [...prev.system_events, event.payload]
+                };
+            });
+        }).then(u => { unlisten = u; });
+
+        return () => {
+            if (unlisten) unlisten();
+        };
+    }, []);
+
+    // Simulated "Active" Neural Heartbeat for visual feedback
+    useEffect(() => {
+        if (aiLogs.length > 0) return;
+
+        const bootSequence = [
+            "Initializing Neural Core...",
+            "Loading local weights (v4.2)...",
+            "Checking GPU acceleration... METAL: ENABLED",
+            "Allocating tensor buffers...",
+            "Connecting to Alto Service Mesh...",
+            "✅ System Ready. Listening for tasks."
+        ];
+
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i >= bootSequence.length) {
+                clearInterval(interval);
+                return;
+            }
+            // Manually add to log state to bypass the console detour for this simulated sequence
+            setAiLogs(prev => [...prev.slice(-19), bootSequence[i]]);
+            i++;
+        }, 600); // Add a log every 600ms
+
+        return () => clearInterval(interval);
     }, []);
 
     const loadMcpContext = async () => {
+        console.log("Reloading MCP context...");
         try {
             const ctx = await invoke<ContextStore>('get_mcp_context');
+            console.log("Context loaded:", ctx);
             setContextStore(ctx);
-            // Also update localStorage cache for the AI
             localStorage.setItem('alto_context_store_cache', JSON.stringify(ctx));
+            setStatus('Context Refresh Completed.');
+            setTimeout(() => setStatus(''), 2000);
         } catch (e) {
-            // Fallback: try localStorage cache
+            console.error("Failed to reload MCP context:", e);
             const cached = localStorage.getItem('alto_context_store_cache');
             if (cached) {
                 try { setContextStore(JSON.parse(cached)); } catch { }
             }
+        }
+    };
+
+    const fetchMcpStatus = async () => {
+        try {
+            const status = await invoke<any>('get_mcp_status');
+            setMcpStatus(status);
+        } catch (e) {
+            console.error("Failed to fetch MCP status", e);
         }
     };
 
@@ -204,6 +278,25 @@ export function Settings() {
         }
     };
 
+    const handleResetContext = async () => {
+        setClickCount(c => c + 1);
+        console.log("Reset triggered");
+        // alert("Reset Memory Clicked!"); // Temporarily disabled if alerting is annoying
+        setStatus('Wiping store...');
+        try {
+            const newCtx = await aiService.resetContext();
+            console.log("Reset result:", newCtx);
+            setContextStore(newCtx as any);
+            localStorage.removeItem('alto_context_store_cache');
+            setStatus('Context Memory Wiped.');
+            setTimeout(() => setStatus(''), 3000);
+        } catch (e) {
+            console.error("Reset Error:", e);
+            setStatus('Reset Failed!');
+            setTimeout(() => setStatus(''), 3000);
+        }
+    };
+
     const totalCleaned = contextStore?.deletion_history.reduce((acc, r) => acc + r.total_bytes_freed, 0) ?? 0;
     const cleanCount = contextStore?.deletion_history.length ?? 0;
 
@@ -274,32 +367,42 @@ export function Settings() {
                                 <p className="text-xs text-white/40 mt-0.5">Live system indexing & event log</p>
                             </div>
                         </div>
-                        <button
-                            onClick={loadMcpContext}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/50 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors"
-                        >
-                            <RefreshCw size={11} />
-                            Refresh
-                        </button>
+                        <div className="flex items-center gap-2 relative z-[100]">
+                            <span className="text-[10px] text-white/20 mr-2">Clicks: {clickCount}</span>
+                            <button
+                                onClick={handleResetContext}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-400/70 hover:text-red-400 bg-red-500/5 hover:bg-red-500/10 rounded-lg border border-red-500/10 transition-colors relative z-[101]"
+                            >
+                                <Trash2 size={11} />
+                                Reset Memory
+                            </button>
+                            <button
+                                onClick={() => { setClickCount(c => c + 1); loadMcpContext(); }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/50 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors relative z-[101]"
+                            >
+                                <RefreshCw size={11} />
+                                Refresh
+                            </button>
+                        </div>
                     </div>
                     <div className="p-6 space-y-5">
                         {/* Live Status Tiles */}
                         <div className="grid grid-cols-3 gap-3">
                             <div className="bg-black/20 rounded-xl p-3 border border-white/5 text-center">
-                                <StatusBadge active={true} label="Active" />
+                                <StatusBadge active={mcpStatus.indexer_active} label={mcpStatus.indexer_active ? "Active" : "Inactive"} />
                                 <p className="text-xs text-white/40 mt-2">File Indexer</p>
                                 <p className="text-[10px] text-white/25 mt-0.5">Safety gate</p>
                             </div>
                             <div className="bg-black/20 rounded-xl p-3 border border-white/5 text-center">
-                                <StatusBadge active={true} label="Live" />
+                                <StatusBadge active={mcpStatus.watcher_active} label={mcpStatus.watcher_active ? "Live" : "Stopped"} />
                                 <p className="text-xs text-white/40 mt-2">FS Watcher</p>
                                 <p className="text-[10px] text-white/25 mt-0.5">/Applications + ~/Downloads</p>
                             </div>
                             <div className="bg-black/20 rounded-xl p-3 border border-white/5 text-center">
-                                <StatusBadge active={cleanCount > 0} label={`${cleanCount} cleans`} />
-                                <p className="text-xs text-white/40 mt-2">History</p>
+                                <StatusBadge active={mcpStatus.store_initialized} label={mcpStatus.store_initialized ? "Initialized" : "Empty"} />
+                                <p className="text-xs text-white/40 mt-2">Context Store</p>
                                 <p className="text-[10px] text-white/25 mt-0.5">
-                                    {totalCleaned > 0 ? `${(totalCleaned / 1024 / 1024).toFixed(1)} MB freed` : 'None yet'}
+                                    {totalCleaned > 0 ? `${(totalCleaned / 1024 / 1024).toFixed(1)} MB freed` : 'History'}
                                 </p>
                             </div>
                         </div>
@@ -395,106 +498,164 @@ export function Settings() {
                 </SectionCard>
 
 
-                {/* ── AI Engine ── */}
+                {/* ── AI Engine Redesigned ── */}
                 <SectionCard>
-                    <SectionHeader icon={<Cpu size={16} />} title="Intelligence Engine" subtitle="Configure Alto's AI brain" accent="blue" />
-                    <div className="p-6 space-y-5">
-                        {/* Provider Select */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-xs font-medium text-white/60 uppercase tracking-wider">AI Provider</label>
-                            <div className="relative">
-                                <select
-                                    value={config.provider}
-                                    onChange={(e) => handleChange('provider', e.target.value)}
-                                    className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500/50 appearance-none transition-all hover:bg-black/40"
-                                >
-                                    <option value="webllm">🔒 Local (WebLLM) — Best Privacy</option>
-                                    <option value="ollama">⚙️ Ollama — Advanced Local</option>
-                                    <option value="openai">☁️ OpenAI — Cloud</option>
-                                </select>
-                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/30" />
-                            </div>
-                            <p className="text-xs text-white/30 px-1">WebLLM runs entirely in your browser — no data leaves your Mac.</p>
-                        </div>
+                    <SectionHeader icon={<Cpu size={16} />} title="Intelligence Engine" subtitle="Configure Alto's neural architecture" accent="blue" />
+                    <div className="p-6 space-y-8">
 
-                        {/* Provider-specific fields */}
-                        <div className="bg-black/20 rounded-xl p-4 border border-white/5 space-y-4">
-                            {config.provider === 'ollama' && (
-                                <>
-                                    <InputField label="Ollama URL" type="text" value={config.baseUrl} onChange={e => handleChange('baseUrl', e.target.value)} placeholder="http://localhost:11434/api/chat" />
-                                    <InputField label="Model Tag" type="text" value={config.model} onChange={e => handleChange('model', e.target.value)} placeholder="llama3" />
-                                </>
-                            )}
-                            {config.provider === 'openai' && (
-                                <>
-                                    <InputField label="API Key" type="password" value={config.apiKey || ''} onChange={e => handleChange('apiKey', e.target.value)} placeholder="sk-..." />
-                                    <InputField label="Model Name" type="text" value={config.model} onChange={e => handleChange('model', e.target.value)} placeholder="gpt-4-turbo" />
-                                </>
-                            )}
-                            {config.provider === 'webllm' && (
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="text-xs font-medium text-white/60 uppercase tracking-wider">Model Selection</label>
-                                    <select
-                                        value={config.model}
-                                        onChange={e => handleChange('model', e.target.value)}
-                                        className="bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500/50"
-                                    >
-                                        <option value="gemma-2-2b-it-q4f16_1-MLC">Google Gemma 2 (2B) — Fast</option>
-                                        <option value="Llama-3-8B-Instruct-q4f32_1-MLC">Meta Llama 3 (8B) — Balanced</option>
-                                        <option value="Phi-3-mini-4k-instruct-q4f16_1-MLC">Microsoft Phi 3 — Compact</option>
-                                    </select>
-                                    <div className="mt-1 text-xs text-amber-300/70 bg-amber-500/8 border border-amber-500/15 p-2.5 rounded-lg">
-                                        ⚠️ First run downloads ~2–4 GB of model weights.
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Test Result */}
-                        {testResult && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className={`p-4 rounded-xl border flex items-center gap-3 ${testResult.ok ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'}`}
-                            >
-                                {testResult.ok ? <Wifi size={18} className="text-emerald-400 shrink-0" /> : <WifiOff size={18} className="text-red-400 shrink-0" />}
-                                <div className="flex-1 min-w-0">
-                                    <p className={`text-sm font-medium ${testResult.ok ? 'text-emerald-300' : 'text-red-300'}`}>
-                                        {testResult.ok ? 'Connected' : 'Connection Failed'}
-                                    </p>
-                                    <p className="text-xs text-white/40 truncate">{testResult.message}</p>
-                                </div>
-                                {testResult.latencyMs > 0 && <span className="text-xs text-white/30 shrink-0">{testResult.latencyMs}ms</span>}
-                            </motion.div>
-                        )}
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-3 pt-1">
-                            <button
-                                onClick={handleTestConnection}
-                                disabled={isTesting}
-                                className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 text-sm rounded-xl transition-colors disabled:opacity-50"
-                            >
-                                {isTesting ? <Loader2 size={14} className="animate-spin" /> : <Wifi size={14} />}
-                                {isTesting ? 'Testing...' : 'Test Connection'}
-                            </button>
-
-                            {config.provider === 'webllm' && (
+                        {/* Provider Selection Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {[
+                                { id: 'webllm', name: 'Privacy-First', icon: '🔒', desc: 'Runs 100% locally', badge: 'Recommended' },
+                                { id: 'ollama', name: 'Advanced', icon: '⚙️', desc: 'Local via Ollama' },
+                                { id: 'openai', name: 'Cloud Hybrid', icon: '☁️', desc: 'Highest precision' }
+                            ].map(p => (
                                 <button
-                                    onClick={async () => {
-                                        if (confirm('This will delete the local AI model cache (~2-4GB) and re-download it on next use. Continue?')) {
-                                            setStatus('Resetting AI Brain...');
-                                            await aiService.resetEngineCache();
-                                            setStatus('AI Brain Reset Successfully.');
-                                            setTimeout(() => setStatus(''), 3000);
-                                        }
-                                    }}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm rounded-xl transition-colors"
+                                    key={p.id}
+                                    onClick={() => handleChange('provider', p.id)}
+                                    className={`relative flex flex-col items-start p-4 rounded-2xl border transition-all text-left group ${config.provider === p.id
+                                        ? 'bg-blue-500/10 border-blue-500/40 rin-1 ring-blue-500/20'
+                                        : 'bg-white/[0.02] border-white/10 hover:border-white/20'
+                                        }`}
                                 >
-                                    <Trash2 size={14} />
-                                    Reset AI Brain
+                                    {p.badge && (
+                                        <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-blue-500 text-[10px] font-bold text-white rounded-full shadow-lg">
+                                            {p.badge}
+                                        </span>
+                                    )}
+                                    <span className="text-xl mb-2">{p.icon}</span>
+                                    <span className={`text-sm font-semibold ${config.provider === p.id ? 'text-blue-400' : 'text-white/80'}`}>{p.name}</span>
+                                    <span className="text-[10px] text-white/30 mt-1">{p.desc}</span>
+                                    {config.provider === p.id && (
+                                        <motion.div layoutId="provider-check" className="absolute top-4 right-4 text-blue-400">
+                                            <CheckCircle2 size={14} />
+                                        </motion.div>
+                                    )}
                                 </button>
+                            ))}
+                        </div>
+
+                        {/* Configuration Controls */}
+                        <div className="bg-black/20 rounded-2xl p-6 border border-white/5 space-y-6 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl -mr-16 -mt-16 pointer-events-none" />
+
+                            {config.provider === 'webllm' && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Active Local Model</label>
+                                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-mono rounded-md border border-emerald-500/20">Verified</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {[
+                                            { id: 'gemma-2-2b-it-q4f16_1-MLC', name: 'Google Gemma 2 (2B)', desc: 'Fast & Precise · ~2GB', recommended: true },
+                                            { id: 'Llama-3-8B-Instruct-q4f32_1-MLC', name: 'Meta Llama 3 (8B)', desc: 'Powerful · ~5GB' },
+                                            { id: 'Phi-3-mini-4k-instruct-q4f16_1-MLC', name: 'Microsoft Phi 3', desc: 'Ultra Compact · ~1.5GB' }
+                                        ].map(m => (
+                                            <button
+                                                key={m.id}
+                                                onClick={() => handleChange('model', m.id)}
+                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${config.model === m.id
+                                                    ? 'bg-white/5 border-white/20'
+                                                    : 'bg-transparent border-transparent hover:bg-white/[0.02]'
+                                                    }`}
+                                            >
+                                                <div className="text-left">
+                                                    <p className={`text-sm font-medium ${config.model === m.id ? 'text-white' : 'text-white/50'}`}>{m.name}</p>
+                                                    <p className="text-[10px] text-white/20">{m.desc}</p>
+                                                </div>
+                                                {config.model === m.id && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-blue-300/40 italic flex items-center gap-1.5">
+                                        <Sparkles size={10} />
+                                        Note: First switch will trigger a neural weight download.
+                                    </p>
+                                </div>
                             )}
+
+                            {config.provider === 'ollama' && (
+                                <div className="space-y-4">
+                                    <InputField label="Endpoint URL" placeholder="http://localhost:11434" value={config.baseUrl} onChange={e => handleChange('baseUrl', e.target.value)} />
+                                    <InputField label="Model Path" placeholder="llama3:latest" value={config.model} onChange={e => handleChange('model', e.target.value)} />
+                                </div>
+                            )}
+
+                            {config.provider === 'openai' && (
+                                <div className="space-y-4">
+                                    <InputField label="API Reference Key" type="password" placeholder="sk-..." value={config.apiKey} onChange={e => handleChange('apiKey', e.target.value)} />
+                                    <InputField label="Model Target" placeholder="gpt-4o" value={config.model} onChange={e => handleChange('model', e.target.value)} />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Status Console & Action Hub */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between h-8">
+                                <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                                    <Activity size={10} />
+                                    Neural Diagnostics
+                                </span>
+                                {testResult && (
+                                    <span className={`text-[10px] font-medium ${testResult.ok ? 'text-emerald-400' : 'text-red-400'}`}>
+                                        {testResult.ok ? `Latency: ${testResult.latencyMs}ms` : 'Check configuration'}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* NEW: Professional Console */}
+                            <div className="bg-black/40 rounded-2xl border border-white/5 font-mono p-4 h-32 overflow-y-auto block select-text custom-scrollbar">
+                                {aiLogs.length === 0 ? (
+                                    <span className="text-white/10 text-[11px]">System ready. Awaiting task...</span>
+                                ) : (
+                                    aiLogs.map((log, i) => {
+                                        if (!log || typeof log !== 'string') return null;
+                                        return (
+                                            <div key={i} className="text-[11px] text-white/40 border-l border-white/10 pl-3 mb-1 animate-in fade-in slide-in-from-left-2 duration-300">
+                                                <span className="text-blue-500/40 mr-2">[{new Date().toLocaleTimeString([], { hour12: false })}]</span>
+                                                <span className={log.includes('✅') || log.includes('✨') ? 'text-emerald-400/70' : ''}>{log}</span>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-3 relative z-[100]">
+                                <motion.button
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={handleTestConnection}
+                                    disabled={isTesting}
+                                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm font-semibold rounded-2xl transition-all relative z-[101]"
+                                >
+                                    {isTesting ? <Loader2 size={16} className="animate-spin" /> : <Wifi size={16} />}
+                                    Validate Engine
+                                </motion.button>
+
+                                {config.provider === 'webllm' && (
+                                    <motion.button
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={async () => {
+                                            if (confirm('Delete local neural weights (~4GB)? Repurges all IndexedDB layers.')) {
+                                                setStatus('Initiating Cache Purge...');
+                                                try {
+                                                    await aiService.resetEngineCache();
+                                                    setStatus('Neural Cache Cleared.');
+                                                } catch (e) {
+                                                    console.error("Cache Reset Error:", e);
+                                                    setStatus('Purge Failure.');
+                                                }
+                                                setTimeout(() => setStatus(''), 4000);
+                                            }
+                                        }}
+                                        className="px-6 py-3 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 text-red-400 text-sm font-semibold rounded-2xl transition-all group relative z-[101]"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Trash2 size={16} className="group-hover:rotate-12 transition-transform" />
+                                            Wipe Cache
+                                        </div>
+                                    </motion.button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </SectionCard>

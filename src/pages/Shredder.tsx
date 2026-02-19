@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileX, Trash2, ShieldAlert } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
@@ -15,7 +15,7 @@ export function Shredder() {
     // listen('tauri://file-drop', ...)
 
     // Setup listener
-    useState(() => {
+    useEffect(() => {
         const unlistenPromise = listen('tauri://file-drop', (event) => {
             const paths = event.payload as string[];
             if (paths && paths.length > 0) {
@@ -23,7 +23,7 @@ export function Shredder() {
             }
         });
         return () => { unlistenPromise.then(unlisten => unlisten()); }
-    });
+    }, []);
 
 
     const handleShred = async () => {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { User, ArrowUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowUp, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { invoke } from '@tauri-apps/api/core';
@@ -12,6 +12,9 @@ import { ToolStatus } from '../components/chat/ToolStatus';
 import { SuggestionChips } from '../components/chat/SuggestionChips';
 import { AltoAvatar } from '../components/AltoAvatar';
 import { DeleteConfirmCard, type IndexedFile } from '../components/chat/DeleteConfirmCard';
+import { RichResultCard } from '../components/chat/RichResultCard';
+import { ActionChips } from '../components/chat/ActionChips';
+import { MentionList, AVAILABLE_MENTIONS } from '../components/chat/MentionList';
 import { useScanStore } from '../store/scanStore';
 
 interface Message {
@@ -20,8 +23,9 @@ interface Message {
     text: string;
     timestamp: Date;
     actionResult?: ActionResult;
-    widgetType?: 'overview' | 'delete_confirm' | null;
+    widgetType?: 'overview' | 'delete_confirm' | 'rich_preview' | null;
     deletePreview?: IndexedFile[];
+    richPreviewData?: { items: any[], totalSize: number, title: string };
     isStreaming?: boolean;
 }
 
@@ -104,6 +108,31 @@ export function Assistant({ onNavigate }: AssistantProps) {
 
     const [messages, setMessages] = useState<Message[]>(loadHistory);
     const [isThinking, setIsThinking] = useState(false);
+    const [thinkingStatus, setThinkingStatus] = useState<string>('');
+
+    // Mention State
+    const [mentionVisible, setMentionVisible] = useState(false);
+    const [mentionFilter, setMentionFilter] = useState('');
+    const [mentionIndex, setMentionIndex] = useState(0);
+
+    const filteredMentions = AVAILABLE_MENTIONS.filter(m =>
+        m.label.toLowerCase().includes(mentionFilter.toLowerCase())
+    );
+
+    const selectMention = (index: number) => {
+        if (index >= filteredMentions.length) return;
+        const option = filteredMentions[index];
+
+        const lastAt = input.lastIndexOf('@');
+        if (lastAt !== -1) {
+            const prefix = input.slice(0, lastAt);
+            const newValue = `${prefix}@${option.label} `; // Add space after
+            setInput(newValue);
+            setMentionVisible(false);
+            // Restore focus
+            textareaRef.current?.focus();
+        }
+    };
 
     // Persist chat history whenever messages change
     useEffect(() => {
@@ -202,6 +231,7 @@ export function Assistant({ onNavigate }: AssistantProps) {
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setIsThinking(true);
+        setThinkingStatus('Consulting neural engine...');
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
         try {
@@ -210,6 +240,7 @@ export function Assistant({ onNavigate }: AssistantProps) {
             const response = await aiService.chat(apiMessages);
 
             setIsThinking(false);
+            setThinkingStatus('');
 
             // Phase 2: If an action was triggered, execute it and report real results
             if (response.actionResult) {
@@ -227,7 +258,7 @@ export function Assistant({ onNavigate }: AssistantProps) {
                     const aiMsg: Message = {
                         id: aiMsgId,
                         role: 'assistant',
-                        text: response.text,
+                        text: response.text, // Show AI's intent text immediately
                         timestamp: new Date(),
                         actionResult: response.actionResult,
                         widgetType: 'delete_confirm',
@@ -241,14 +272,29 @@ export function Assistant({ onNavigate }: AssistantProps) {
                 const realResult = response.actionResult;
                 const aiMsgId = (Date.now() + 1).toString();
 
-                // Show placeholder while AI generates real summary
+                let widgetType: 'overview' | 'delete_confirm' | 'rich_preview' | null = null;
+                let richPreviewData = undefined;
+
+                if (realResult.action === 'show_overview') {
+                    widgetType = 'overview';
+                } else if (realResult.action === 'scan_junk' || realResult.action === 'scan_large_files') {
+                    widgetType = 'rich_preview';
+                    richPreviewData = {
+                        items: realResult.data?.items || [],
+                        totalSize: realResult.data?.total_size_bytes || 0,
+                        title: realResult.action === 'scan_junk' ? 'Junk Scan Results' : 'Large Files Discovered'
+                    };
+                }
+
+                // Show placeholder with initial AI intent while generating real summary
                 setMessages(prev => [...prev, {
                     id: aiMsgId,
                     role: 'assistant',
-                    text: '',
+                    text: response.text, // Fix: Show intent text instead of empty string
                     timestamp: new Date(),
                     actionResult: realResult,
-                    widgetType: realResult.action === 'show_overview' ? 'overview' : null
+                    widgetType,
+                    richPreviewData
                 }]);
 
                 // Phase 3: Feed REAL results back to AI for a genuine response
@@ -256,12 +302,14 @@ export function Assistant({ onNavigate }: AssistantProps) {
                 const followupMessages = [
                     ...apiMessages,
                     { role: 'assistant', content: response.text }, // AI's intent
-                    { role: 'user', content: `SYSTEM: The task completed. Here are the REAL results:\n${realSummaryText}\n\nNow write a concise, friendly 2-3 sentence summary of what actually happened using these exact numbers. Do not include any ACTION tags.` }
+                    { role: 'user', content: `SYSTEM: The task completed. Here are the REAL results:\n${realSummaryText}\n\nNow write a concise, friendly 2-3 sentence summary of what actually happened using these exact numbers. \n\n⚠️ CRITICAL: DO NOT output any ACTION tags or mention "scanning" in a way that sounds like a new command. Just summarize the results.` }
                 ];
 
                 setIsThinking(true);
+                setThinkingStatus(`Synthesizing ${realResult.action} results...`);
                 const realResponse = await aiService.chat(followupMessages);
                 setIsThinking(false);
+                setThinkingStatus('');
 
                 await streamResponse(realResponse.text, aiMsgId);
                 return;
@@ -290,65 +338,114 @@ export function Assistant({ onNavigate }: AssistantProps) {
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (mentionVisible && filteredMentions.length > 0) {
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setMentionIndex(prev => Math.max(0, prev - 1));
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setMentionIndex(prev => Math.min(filteredMentions.length - 1, prev + 1));
+                return;
+            }
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                selectMention(mentionIndex);
+                return;
+            }
+            if (e.key === 'Escape') {
+                setMentionVisible(false);
+                return;
+            }
+        }
+
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
         }
     };
 
+    const [isTyping, setIsTyping] = useState(false);
+
+    const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const val = e.target.value;
+        setInput(val);
+        setIsTyping(val.length > 0); // Activate "Alive" state
+
+        // Check for @ trigger
+        const cursorInfo = e.target.selectionStart;
+        const textBeforeCursor = val.slice(0, cursorInfo);
+        const lastAt = textBeforeCursor.lastIndexOf('@');
+
+        if (lastAt !== -1) {
+            const textAfterAt = textBeforeCursor.slice(lastAt + 1);
+            if (!textAfterAt.includes(' ')) {
+                setMentionVisible(true);
+                setMentionFilter(textAfterAt);
+                setMentionIndex(0);
+                return;
+            }
+        }
+        setMentionVisible(false);
+    };
+
     return (
         <div className="h-full flex flex-col relative font-sans">
             {/* Header - Transparent/Glass */}
             <div className="absolute top-0 left-0 right-0 z-10 p-6 flex justify-between items-start pointer-events-none">
-                <header className="mb-6 flex items-center gap-3">
-                    <div className="p-2 rounded-2xl bg-white/5 border border-white/10 shadow-lg shadow-purple-500/10">
-                        <AltoAvatar size={40} isThinking={isThinking} />
+                <header className="mb-6 flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl shadow-purple-500/10 transition-transform duration-500 hover:scale-105 pointer-events-auto">
+                        <AltoAvatar size={42} isThinking={isThinking} isTyping={isTyping} />
                     </div>
                     <div>
-                        <h1 className="text-lg font-bold text-white leading-tight">Alto AI</h1>
-                        <p className="text-xs text-white/50 font-medium">Agentic System &bull; v2.0</p>
+                        <h1 className="text-xl font-bold text-white tracking-tight leading-none drop-shadow-md">Alto AI</h1>
+                        <p className="text-xs text-white/50 font-medium tracking-wide mt-1">Agentic System &bull; v2.0</p>
                     </div>
                 </header>
             </div>
 
-            {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto px-4 md:px-20 pt-24 pb-40 scroll-smooth">
-                <div className="max-w-3xl mx-auto space-y-6">
-                    {messages.map((msg, idx) => (
+            {/* Chat Area - Premium Layout */}
+            <div className="flex-1 overflow-y-auto px-4 md:px-20 pt-28 pb-48 scroll-smooth no-scrollbar">
+                <div className="max-w-3xl mx-auto space-y-8">
+                    {messages.map((msg) => (
                         <motion.div
                             key={msg.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ type: "spring", stiffness: 350, damping: 25 }} // Physics bounce
+                            className={`flex gap-5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
-                            {/* Avatar for Assistant */}
+                            {/* Avatar for Assistant - Floating Left */}
                             {msg.role === 'assistant' && (
-                                <div className="mt-2 shrink-0">
-                                    <AltoAvatar size={32} isThinking={isThinking && idx === messages.length - 1} />
+                                <div className="mt-1 shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/10 flex items-center justify-center border border-white/5 shadow-inner">
+                                        <Sparkles size={14} className="text-indigo-300" />
+                                    </div>
                                 </div>
                             )}
 
                             <div className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
 
-                                {/* Tool Execution Steps (Agentic) */}
+                                {/* Tool Execution Steps (Agentic) - Clean Micro-UI */}
                                 {msg.role === 'assistant' && msg.actionResult?.steps && (
                                     <div className="mb-3 space-y-2 w-full">
                                         {msg.actionResult.steps.map((_step, idx) => (
                                             <ToolStatus
                                                 key={idx}
                                                 toolName={msg.actionResult!.action}
-                                                state={'completed'} // Ideally we'd animate these one by one
+                                                state={'completed'}
                                             />
                                         ))}
                                     </div>
                                 )}
 
-                                {/* Message Bubble */}
+                                {/* Message Bubble - The "Glass" Upgrade */}
                                 <div className={`
-                                    py-3 px-4 rounded-2xl shadow-sm text-sm leading-relaxed
+                                    py-3 px-5 rounded-2xl text-[15px] leading-relaxed tracking-wide font-medium backdrop-blur-sm
                                     ${msg.role === 'user'
-                                        ? 'bg-[#2D2B55] text-white rounded-tr-sm border border-white/10'
-                                        : 'bg-transparent text-white/90 px-0 shadow-none' // Assistant text blends with bg
+                                        ? 'bg-gradient-to-br from-[#4c1d95] to-[#5b21b6] text-white shadow-lg shadow-purple-900/20 border border-white/10 rounded-tr-md' // Premium Gradient User Bubble
+                                        : 'bg-transparent text-white/90 px-0 shadow-none' // Assistant text floats on background
                                     }
                                 `}>
                                     {msg.role === 'user' ? (
@@ -362,110 +459,138 @@ export function Assistant({ onNavigate }: AssistantProps) {
                                     )}
                                 </div>
 
-                                {/* Widgets */}
+                                {/* Interactive Widgets */}
                                 {msg.widgetType === 'overview' && (
-                                    <div className="mt-2 w-full">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mt-4 w-full"
+                                    >
                                         <SystemOverviewWidget
                                             stats={systemStats}
                                             junkSize={junkResult?.total_size_bytes || 0}
                                             onClean={() => onNavigate('system-junk')}
                                             onNavigate={onNavigate}
                                         />
-                                    </div>
+                                    </motion.div>
                                 )}
 
-                                {/* MCP Safety: Delete Confirmation Card */}
                                 {msg.widgetType === 'delete_confirm' && msg.deletePreview && (
-                                    <div className="mt-2 w-full">
+                                    <div className="mt-4 w-full">
                                         <DeleteConfirmCard
                                             files={msg.deletePreview}
                                             onConfirm={async (safePaths) => {
+                                                // ... (Handlers kept same)
                                                 try {
                                                     const result = await invoke<any>('confirm_delete', { paths: safePaths });
-                                                    // Update message to show result
                                                     setMessages(prev => prev.map(m => m.id === msg.id ? {
-                                                        ...m,
-                                                        widgetType: null,
-                                                        text: m.text + `\n\n✅ **Done!** Removed ${result.removed} files and freed ${result.bytes_freed ? (result.bytes_freed / 1024 / 1024).toFixed(1) + ' MB' : 'some space'}.`
+                                                        ...m, widgetType: null, text: m.text + `\n\n✅ **Done!** Removed ${result.removed} files.`
                                                     } : m));
-                                                } catch (e: any) {
-                                                    setMessages(prev => prev.map(m => m.id === msg.id ? {
-                                                        ...m,
-                                                        widgetType: null,
-                                                        text: m.text + `\n\n❌ **Error:** ${e.message}`
-                                                    } : m));
-                                                }
+                                                } catch (e: any) { console.error(e); }
                                             }}
-                                            onCancel={() => {
-                                                setMessages(prev => prev.map(m => m.id === msg.id ? {
-                                                    ...m,
-                                                    widgetType: null,
-                                                    text: m.text + '\n\n🚫 Cleanup cancelled. No files were deleted.'
-                                                } : m));
-                                            }}
+                                            onCancel={() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, widgetType: null, text: m.text + '\n\n🚫 Cleanup cancelled.' } : m))}
                                         />
                                     </div>
                                 )}
-                            </div>
 
-                            {/* Avatar for User */}
-                            {msg.role === 'user' && (
-                                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 mt-2">
-                                    <User size={14} className="text-white/70" />
-                                </div>
-                            )}
+                                {msg.widgetType === 'rich_preview' && msg.richPreviewData && (
+                                    <div className="mt-4 w-full">
+                                        <RichResultCard
+                                            items={msg.richPreviewData.items}
+                                            totalSize={msg.richPreviewData.totalSize}
+                                            title={msg.richPreviewData.title}
+                                            onViewItem={(path) => handleSend(`Tell me more about this file: ${path}`)}
+                                        />
+                                    </div>
+                                )}
+
+                                {msg.role === 'assistant' && msg.actionResult?.data?.suggestions && (
+                                    <ActionChips
+                                        chips={msg.actionResult.data.suggestions}
+                                        onAction={(action) => action.startsWith('navigate:') ? onNavigate(action.split(':')[1]) : handleSend(action)}
+                                    />
+                                )}
+                            </div>
                         </motion.div>
                     ))}
 
-                    {isThinking && <ThinkingIndicator />}
-
-                    <div ref={messagesEndRef} />
+                    {isThinking && <ThinkingIndicator status={thinkingStatus} />}
+                    <div ref={messagesEndRef} className="h-4" />
                 </div>
             </div>
 
-            {/* Floating Input Capsule */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/90 to-transparent pb-8">
-                <div className="max-w-3xl mx-auto flex flex-col gap-4">
+            {/* Floating Command Capsule - The New "Centerpiece" Input */}
+            <div className="absolute bottom-8 left-0 right-0 px-4 flex justify-center z-50 pointer-events-none">
+                <div className="relative w-full max-w-2xl pointer-events-auto group">
 
-                    {/* Suggestion Chips (Only show if few messages/idle) */}
-                    {messages.length < 3 && !isThinking && (
-                        <div className="flex justify-center">
-                            <SuggestionChips onSelect={(text) => handleSend(text)} />
-                        </div>
-                    )}
+                    {/* Suggestion Chips - Float Above */}
+                    <AnimatePresence>
+                        {messages.length < 3 && !isThinking && !input.trim() && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 5 }}
+                                className="absolute -top-16 left-0 right-0 flex justify-center"
+                            >
+                                <SuggestionChips onSelect={(text) => handleSend(text)} />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                    <div className="relative bg-[#1A1B2E] border border-white/10 rounded-3xl p-2 shadow-2xl flex items-end gap-2 ring-1 ring-white/5 focus-within:ring-purple-500/50 transition-all">
+                    {/* The Capsule Itself */}
+                    <motion.div
+                        layout
+                        className={`
+                            relative bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-2 flex items-end gap-3 shadow-2xl shadow-black/50
+                            transition-all duration-300 ring-1 ring-white/5
+                            ${isTyping ? 'ring-purple-500/30' : 'hover:ring-white/20'}
+                        `}
+                    >
+                        {/* Inner "Neural Activity" Glow */}
+                        <div className={`absolute inset-0 rounded-[2rem] bg-gradient-to-r from-purple-500/10 via-transparent to-indigo-500/10 opacity-0 transition-opacity duration-500 pointer-events-none ${isTyping ? 'opacity-100' : ''}`} />
+
+                        <MentionList
+                            visible={mentionVisible}
+                            filter={mentionFilter}
+                            selectedIndex={mentionIndex}
+                            onSelect={(opt) => selectMention(filteredMentions.findIndex(m => m.id === opt.id))}
+                            position={{ x: 20, y: -200 }} // Float above
+                        />
+
+                        {/* Input Field */}
                         <textarea
                             ref={textareaRef}
                             value={input}
-                            onChange={(e) => setInput(e.target.value)}
+                            onChange={handleInput}
                             onKeyDown={handleKeyDown}
-                            placeholder="Ask Alto anything..."
-                            className="w-full bg-transparent text-white placeholder:text-white/30 text-sm px-4 py-3 min-h-[50px] max-h-[200px] resize-none focus:outline-none"
+                            placeholder="Ask Alto to scan, clean, or explain..."
+                            className="w-full bg-transparent text-white placeholder:text-white/30 text-[15px] px-5 py-3.5 min-h-[52px] max-h-[160px] resize-none focus:outline-none scrollbar-hide font-medium tracking-wide"
                             rows={1}
                         />
+
+                        {/* Action Button - Circular Gradient */}
                         <button
                             onClick={() => handleSend()}
                             disabled={!input.trim() || isThinking}
                             className={`
-                                w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all mb-1
+                                w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 relative overflow-hidden group/btn mb-1 mr-1
                                 ${input.trim()
-                                    ? 'bg-white text-black hover:scale-105 active:scale-95'
-                                    : 'bg-white/10 text-white/30 cursor-not-allowed'}
+                                    ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95'
+                                    : 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'}
                             `}
                         >
                             {isThinking ? (
                                 <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                             ) : (
-                                <ArrowUp size={20} strokeWidth={2.5} />
+                                <ArrowUp size={22} strokeWidth={2.5} className="group-hover/btn:-translate-y-0.5 transition-transform" />
                             )}
                         </button>
-                    </div>
-                    <div className="text-center">
-                        <p className="text-[10px] text-white/30">
-                            Alto can make mistakes. Please verify critical system actions.
-                        </p>
-                    </div>
+                    </motion.div>
+
+                    {/* Footer Hint */}
+                    <p className="text-center text-[10px] text-white/20 mt-3 font-medium tracking-wider uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                        Agentic Mode Active &bull; v2.1.4
+                    </p>
                 </div>
             </div>
         </div>

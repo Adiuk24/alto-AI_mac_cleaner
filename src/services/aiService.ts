@@ -41,38 +41,25 @@ const VALID_ACTIONS = [
 // type ActionName = typeof VALID_ACTIONS[number];
 
 const TOOL_MANIFEST = `
-You are Alto, an intelligent and safety-first Mac system agent. You have tools to help the user, but you MUST follow the safety protocol below.
+### 🚨 ALTO PROTOCOL (STRICT ADHERENCE REQUIRED)
+1. COMMANDS:
+   ACTION:scan_junk (Use when user asks to scan, clean, or check apps/cache/logs)
+   ACTION:clean_junk (Use ONLY after results are shown)
+   ACTION:scan_malware (Use for security/virus checks)
+   ACTION:optimize_speed (Use for RAM/DNS/slow performance)
+   ACTION:scan_large_files (Use for storage/big files/space)
+   ACTION:show_overview (Use for "how is my mac", "status", or general report)
+   ACTION:navigate:dashboard (Use for Home)
 
-## Available Actions
-  ACTION:scan_junk — Scan for system junk and cache files
-  ACTION:clean_junk — Clean all found junk files (ALWAYS shows a confirmation card first)
-  ACTION:scan_malware — Run a security/malware scan
-  ACTION:optimize_speed — Flush DNS cache and free up RAM
-  ACTION:scan_large_files — Find large files taking up disk space
-  ACTION:show_overview — Show a graphical system status widget
-  ACTION:navigate:dashboard — Go to the Dashboard page
-  ACTION:navigate:system-junk — Go to System Junk page
-  ACTION:navigate:cleaner — Go to Mail Cleaner page
-
-## ⚠️ CRITICAL SAFETY RULES (NEVER VIOLATE)
-1. You MUST NEVER delete files without user confirmation. The system will automatically show a "Delete Confirm Card" before any deletion.
-2. You MUST NEVER suggest deleting files in ~/Documents, ~/Desktop, ~/Downloads, ~/Pictures, ~/Movies, or ~/Music.
-3. You MUST NEVER delete system files in /System, /usr, /bin, /sbin.
-4. When asked to "clean", always run ACTION:scan_junk first, then the system will ask the user to confirm.
-5. Always explain what you found BEFORE suggesting any action.
-6. If a user asks you to delete something that seems risky, warn them first.
-
-## Format Rules
-- Put the ACTION tag on its own line: "ACTION:scan_junk"
-- Do NOT use markdown code blocks for the action.
-- Only use ONE action per response.
-- Always explain what you're about to do before the ACTION tag.
+2. MANDATORY RULE:
+   If you mention any check, scan, or system report, you MUST output the ACTION tag on the LAST line.
+   NO code blocks. NO bolding the tag. NO trailing periods.
 `;
 
 const DEFAULT_CONFIG: AIConfig = {
     provider: 'webllm',
     baseUrl: 'http://localhost:11434/api/chat',
-    model: 'gemma-2-2b-it-q4f16_1-MLC'
+    model: 'gemma-2-2b-it-q4f16_1-MLC' // Default to Gemma 2 (2B) for best local performance
 };
 
 const STORE_KEY = 'alto_ai_config_v1';
@@ -92,29 +79,60 @@ export class AIService {
     }
 
     async resetEngineCache() {
+        console.log("LOG:🗑️ Initializing AI Cache Purge...");
         if (this.engine) {
+            console.log("LOG:Unloading active engine instance...");
             await this.engine.unload();
             this.engine = null;
         }
 
-        // Delete WebLLM related databases
-        const dbs = ['mlc-chat-db', 'mlc-chat-config'];
+        const dbs = [
+            'mlc-chat-db',
+            'mlc-chat-config',
+            'web-llm-cache',
+            'mlc-ai-db',
+            'next-web-llm-cache',
+            'wasm-cache',
+            'mlc-ai-config',
+            'mlc-chat-db-v1'
+        ];
+
         for (const dbName of dbs) {
+            console.log(`LOG:Deleting IndexedDB: ${dbName}`);
             try {
                 const req = indexedDB.deleteDatabase(dbName);
                 await new Promise((resolve, reject) => {
-                    req.onsuccess = resolve;
-                    req.onerror = reject;
+                    req.onsuccess = () => {
+                        console.log(`LOG:✅ Purged DB: ${dbName}`);
+                        resolve(null);
+                    };
+                    req.onblocked = () => {
+                        console.warn(`LOG:⚠️ Deletion blocked for DB: ${dbName}.`);
+                        resolve(null);
+                    };
+                    req.onerror = () => {
+                        console.error(`LOG:❌ Error purging DB: ${dbName}`);
+                        reject(new Error(`Failed to delete ${dbName}`));
+                    };
                 });
             } catch (e) {
-                console.error(`Failed to delete DB: ${dbName}`, e);
+                console.error(`LOG:Failed to delete DB: ${dbName}`, e);
             }
         }
 
-        // Also clear localStorage related to model cache if any
+        console.log("LOG:Clearing model-specific local preferences...");
         Object.keys(localStorage).forEach(key => {
-            if (key.includes('mlc')) localStorage.removeItem(key);
+            if (key.includes('mlc') || key.includes('web-llm')) {
+                console.log(`LOG:Removed meta-key: ${key}`);
+                localStorage.removeItem(key);
+            }
         });
+
+        console.log("LOG:✨ AI Infrastructure Reset Complete.");
+    }
+
+    async resetContext() {
+        return await invoke('reset_mcp_context_command');
     }
 
     saveConfig(config: AIConfig) {
@@ -128,7 +146,7 @@ export class AIService {
         }
     }
 
-    private async getWebLLMEngine() {
+    private async getWebLLMEngine(isRetry: boolean = false): Promise<MLCEngine> {
         if (this.engine) return this.engine;
 
         const initProgressCallback: InitProgressCallback = (report) => {
@@ -151,6 +169,16 @@ export class AIService {
             return this.engine;
         } catch (err: any) {
             console.error("Failed to load WebLLM engine:", err);
+
+            // Auto-fix for ConstraintError (corrupted/inconsistent cache)
+            if (!isRetry && err.message &&
+                (err.message.includes("ConstraintError") || err.message.includes("Key already exists"))) {
+                console.warn("LOG:⚠️ Detected WebLLM cache inconsistency (ConstraintError). Attempting auto-fix...");
+                await this.resetEngineCache();
+                console.log("LOG:🔄 Neural Cache purged. Retrying initialization...");
+                return this.getWebLLMEngine(true);
+            }
+
             // Propagate error with a friendly message if possible
             if (err.message && err.message.includes("NetworkError")) {
                 throw new Error("Network error: Could not download AI model. Please check your internet connection.");
@@ -160,6 +188,8 @@ export class AIService {
     }
 
     async chat(messages: { role: string; content: string }[]): Promise<{ text: string; actionResult?: ActionResult }> {
+        const isFollowup = messages.some(m => m.content.includes('SYSTEM: The task completed'));
+        // ...
         // Get current system state from the store
         const { junkResult, largeFilesResult, systemStats, installedAppsCount } = useScanStore.getState();
 
@@ -170,7 +200,17 @@ export class AIService {
         const systemContext = this.getSystemContext(junkResult, largeFilesResult, systemStats, installedAppsCount, profile.name, profile.role);
 
         // Always replace/prepend system message with fresh context
-        const nonSystemMessages = messages.filter(m => m.role !== 'system');
+        // Create a deep copy of messages to avoid mutating the original array/objects
+        const nonSystemMessages = messages
+            .filter(m => m.role !== 'system')
+            .map(m => ({ ...m })); // Clone objects
+
+        // TURN REINFORCEMENT: Append a mandatory reminder ONLY if not already a system follow-up
+        const lastMsg = nonSystemMessages[nonSystemMessages.length - 1];
+        if (lastMsg && lastMsg.role === 'user' && !lastMsg.content.includes('SYSTEM:')) {
+            lastMsg.content += "\n\n!! NEURAL COMMAND PROTOCOL !!\nIf any system operation is needed, you MUST output exactly one tag (e.g., ACTION:scan_junk) as the very last line of your response.";
+        }
+
         const fullMessages = [
             { role: 'system', content: systemContext },
             ...nonSystemMessages
@@ -207,24 +247,38 @@ export class AIService {
         }
 
         // Check for ACTION: tags
-        const actionResult = await this.parseAndExecuteActions(response);
+        const actionResult = await this.parseAndExecuteActions(response, isFollowup);
         if (actionResult) {
-            // Remove the ACTION: tag from the displayed text
-            const cleanText = response.replace(/ACTION:\w+/g, '').trim();
-            return { text: cleanText, actionResult };
+            // Remove the ACTION: tag and any surrounding markers (like **) from display text
+            // Uses a regex matching the detection logic
+            const cleanText = response.replace(/(?:ACTION|Action|action):\s*\*?[a-zA-Z0-9_:]+\*?\b/gi, '').trim();
+            return { text: cleanText || "Executing system command...", actionResult };
         }
 
         return { text: response };
     }
 
-    private async parseAndExecuteActions(response: string): Promise<ActionResult | undefined> {
+    private async parseAndExecuteActions(response: string, isFollowup: boolean): Promise<ActionResult | undefined> {
+        if (isFollowup) return undefined; // NEVER trigger actions during a summary/follow-up turn
+
         console.log("🤖 Raw AI Response:", response); // DEBUG LOG
 
-        // Regex to find ACTION: tag, case insensitive, tolerant of whitespace
-        const actionMatch = response.match(/ACTION:\s*([a-zA-Z0-9_:]+)/i); // Added : for navigate:dashboard
+        // Regex to find ACTION: tag - extremely resilient (case-insensitive, fuzzy markers, greedy match)
+        const actionMatch = response.match(/(?:ACTION|Action|action):\s*\*?([a-zA-Z0-9_:]+)\*?\b/i);
 
         if (!actionMatch) {
-            console.log("❌ No ACTION tag found in response.");
+            // COMPLIANCE RESCUE: If model is chatty but misses the tag, try to infer it from keywords
+            const lowerResponse = response.toLowerCase();
+            if (lowerResponse.includes('scanning') || lowerResponse.includes('junk files') || lowerResponse.includes('junk scan')) {
+                console.warn("⚠️ Compliance Rescue: Inferred ACTION:scan_junk");
+                return this.executeAction('scan_junk');
+            }
+            if (lowerResponse.includes('overview') || lowerResponse.includes('how is my mac') || lowerResponse.includes('system status')) {
+                console.warn("⚠️ Compliance Rescue: Inferred ACTION:show_overview");
+                return this.executeAction('show_overview');
+            }
+
+            if (!isFollowup) console.log("❌ No ACTION tag found in response.");
             return undefined;
         }
 
@@ -271,7 +325,13 @@ export class AIService {
                         action: 'scan_junk',
                         success: true,
                         summary: `I've finished scanning. Found ${size} of junk files.`,
-                        data: result,
+                        data: {
+                            ...result,
+                            suggestions: [
+                                { label: 'Review All Junk', action: 'navigate:system-junk' },
+                                { label: 'Check Large Files', action: 'Scan my large files' }
+                            ]
+                        },
                         steps: [`Initializing junk scanner...`, `Analyzing application caches...`, `Checking system logs...`, `Aggregating results...`]
                     };
                 }
@@ -331,7 +391,15 @@ export class AIService {
                         action: 'scan_large_files',
                         success: true,
                         summary: `Found ${result.items.length} large files (${formatBytes(result.total_size_bytes)} total)`,
-                        data: { itemCount: result.items.length, totalSize: result.total_size_bytes }
+                        data: {
+                            itemCount: result.items.length,
+                            totalSize: result.total_size_bytes,
+                            items: result.items,
+                            suggestions: [
+                                { label: 'Go to Space Lens', action: 'navigate:space-lens' },
+                                { label: 'Search for Malware', action: 'Scan for malware' }
+                            ]
+                        }
                     };
                 }
                 default:
@@ -439,13 +507,11 @@ export class AIService {
             : `No large files scan has been run yet.`;
 
         return `
-You are **Alto**, an intelligent, friendly, and safety-first Mac system agent. You have real-time access to this Mac's system state.
+${TOOL_MANIFEST}
 
-## 👤 User Profile
-${userGreeting}
-Current time: ${now}
+You are **Alto**, a Mac Intelligence Agent. You have real-time access to this Mac.
 
-## 💻 Live System State (as of right now)
+## 💻 Live System State (Report these numbers if asked)
 - **CPU Load**: ${systemStats?.cpu_load.toFixed(1) ?? 'unknown'}%
 - **RAM**: ${systemStats ? formatBytes(systemStats.memory_used) : 'unknown'} used / ${systemStats ? formatBytes(systemStats.memory_total) : 'unknown'} total (${memPercent}% full)
 - **Installed Apps**: ${installedAppsCount > 0 ? installedAppsCount : 'not yet scanned'}
@@ -453,15 +519,20 @@ Current time: ${now}
 - **Large Files**: ${largeStatus}
 - **Total Clutter**: ${totalClutter > 0 ? formatBytes(totalClutter) : 'none detected yet'}
 
-## 🧠 Your Personality
-- You are warm, direct, and slightly witty — like a smart friend who happens to be a Mac expert.
-- You speak in plain English, not tech jargon, unless the user asks for details.
-- You proactively use the live system data above to give relevant, personalized advice.
-- If the user asks "how is my Mac?", use the real numbers above.
-- If RAM is above 80%, mention it. If junk is large, mention it.
-- You remember everything said in this conversation.
+## 👤 User Profile
+${userGreeting}
+Current time: ${now}
 
-${TOOL_MANIFEST}
+## 🧠 Personality
+Direct, witty, Mac expert. Speak in plain English. 
+
+## 🏷️ Context Tags
+The user may use tags like @Memory, @CPU, @Junk, @LargeFiles. These refer directly to the data in "Live System State". 
+- If user tags **@Memory** or **@CPU**, analyze the load numbers above.
+- If user tags **@Junk** or **@LargeFiles**, summarize the scan findings above.
+- If user tags **@Downloads** or **@Applications**, they are asking about those folders; you can offer to scan them.
+
+If you mention any of the data above, you should usually output ACTION:show_overview.
         `;
     }
 
@@ -475,8 +546,13 @@ ${TOOL_MANIFEST}
             const reply = await engine.chat.completions.create({
                 messages: messages as any,
                 stream: false,
+                // @ts-ignore - WebLLM supports stop but types might lag
+                stop: ["<|eot_id|>", "<|start_header_id|>", "User:", "Human:", "assistant\n\n"],
+                temperature: 0.7,
+                max_tokens: 1024,
             });
-            return reply.choices[0].message.content || "";
+            const raw = reply.choices[0].message.content || "";
+            return raw.trim();
         } catch (e: any) {
             console.error("AI Chat Error:", e);
             return `I'm having trouble thinking right now. (${e.message || "Model Init Failed"})`;
@@ -501,7 +577,7 @@ ${TOOL_MANIFEST}
             }
 
             const data = await response.json();
-            return data.message.content;
+            return (data.message?.content || "").trim();
         } catch (error: any) {
             throw new Error(error.message || 'Failed to connect to Ollama');
         }

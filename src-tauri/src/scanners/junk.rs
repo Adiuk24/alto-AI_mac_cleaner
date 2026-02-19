@@ -207,6 +207,7 @@ pub fn scan_junk(home: &str) -> ScanResult {
                     size_bytes: size,
                     category_name: category_name(tpl).to_string(),
                     is_directory: false, // It's a file now
+                    accessed_date: None,
                 });
                 total_size_bytes += size;
             }

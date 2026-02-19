@@ -115,7 +115,7 @@ export function SystemJunk() {
 
                                 <div className="space-y-6">
                                     <div className="flex gap-5">
-                                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10 shadow-lg shadow-pink-500/10">
+                                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10 shadow-lg shadow-pink-500/10 backdrop-blur-sm">
                                             <Sparkles className="text-pink-400" />
                                         </div>
                                         <div>
@@ -124,7 +124,7 @@ export function SystemJunk() {
                                         </div>
                                     </div>
                                     <div className="flex gap-5">
-                                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10 shadow-lg shadow-pink-500/10">
+                                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10 shadow-lg shadow-pink-500/10 backdrop-blur-sm">
                                             <Layers className="text-purple-400" />
                                         </div>
                                         <div>
@@ -139,10 +139,10 @@ export function SystemJunk() {
                             <div className="flex flex-col items-center justify-center relative">
                                 <div className="relative w-80 h-80 flex items-center justify-center">
                                     {/* Large Glowing Circle Background */}
-                                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-pink-500 to-rose-600 blur-2xl opacity-40 animate-pulse" />
-                                    <div className="relative w-72 h-72 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 shadow-2xl shadow-pink-500/50 flex items-center justify-center border border-white/10">
+                                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-pink-500 to-rose-600 blur-3xl opacity-20 animate-pulse" />
+                                    <div className="relative w-72 h-72 rounded-full glass-card flex items-center justify-center border border-white/10 shadow-2xl">
                                         {/* Inner aesthetic graphic - abstract scanner icon */}
-                                        <Trash2 className="w-32 h-32 text-white drop-shadow-lg" strokeWidth={1} />
+                                        <Trash2 className="w-32 h-32 text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.5)]" strokeWidth={1} />
                                     </div>
                                 </div>
 
@@ -151,7 +151,7 @@ export function SystemJunk() {
                                     disabled={loading}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    className="absolute bottom-0 translate-y-1/2 w-24 h-24 rounded-full border-[6px] border-[#1E1E2E] bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md flex items-center justify-center shadow-2xl z-20 group cursor-pointer"
+                                    className="absolute bottom-0 translate-y-1/2 w-24 h-24 rounded-full btn-premium bg-gradient-to-br from-[#ffffff10] to-[#ffffff05] backdrop-blur-md flex items-center justify-center border border-white/20 z-20 group cursor-pointer"
                                 >
                                     <div className="absolute inset-1 rounded-full border border-white/20 group-hover:border-white/50 transition-colors" />
                                     <span className="font-bold text-white tracking-wide group-hover:text-pink-200 transition-colors">Scan</span>
@@ -171,11 +171,11 @@ export function SystemJunk() {
                         className="h-full flex flex-col items-center justify-center relative z-10"
                     >
                         <div className="w-32 h-32 relative flex items-center justify-center mb-8">
-                            <div className="absolute inset-0 border-4 border-white/10 rounded-full" />
+                            <div className="absolute inset-0 border-4 border-white/5 rounded-full" />
                             <div className="absolute inset-0 border-4 border-transparent border-t-pink-500 rounded-full animate-spin" />
                             <Trash2 className="text-white/20" size={48} />
                         </div>
-                        <p className="text-2xl font-light text-white">Scanning for junk...</p>
+                        <p className="text-2xl font-light text-white tracking-wide">Scanning for junk...</p>
                     </motion.div>
                 )}
 
@@ -199,11 +199,11 @@ export function SystemJunk() {
                             <Trash2 className="w-20 h-20 text-white" strokeWidth={1} />
                         </div>
 
-                        <h2 className="text-4xl font-bold text-white mb-2">Scan Completed</h2>
+                        <h2 className="text-4xl font-bold text-white mb-2 tracking-tight">Scan Completed</h2>
                         <p className="text-white/50 mb-8">We found some files you can safely remove.</p>
 
-                        <div className="flex flex-col items-center bg-white/5 rounded-3xl p-8 border border-white/10 backdrop-blur-sm w-full max-w-md">
-                            <div className="text-6xl font-light text-pink-400 mb-2 font-mono tracking-tight">
+                        <div className="flex flex-col items-center glass-card p-10 w-full max-w-md border border-white/10">
+                            <div className="text-6xl font-light text-pink-400 mb-2 font-mono tracking-tight drop-shadow-[0_0_15px_rgba(244,114,182,0.3)]">
                                 {formatBytes(selectedSize)}
                             </div>
                             <p className="text-white/40 mb-8 text-sm uppercase tracking-widest font-medium">Smart Selection</p>
@@ -218,7 +218,7 @@ export function SystemJunk() {
                             <button
                                 onClick={handleClean}
                                 disabled={cleaning || selectedJunkItems.size === 0}
-                                className="w-full py-4 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-bold text-lg shadow-lg shadow-pink-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                                className="w-full py-4 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-bold text-lg shadow-lg shadow-pink-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none btn-premium"
                             >
                                 {cleaning ? 'Cleaning...' : 'Clean Junk'}
                             </button>
@@ -233,10 +233,10 @@ export function SystemJunk() {
                         initial={{ opacity: 0, x: 50 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 50 }}
-                        className="h-full flex flex-col bg-[#1E1E2E] relative z-20"
+                        className="h-full flex flex-col bg-[#0f172a]/70 backdrop-blur-2xl relative z-20"
                     >
                         {/* Header */}
-                        <div className="bg-[#181825] border-b border-white/5 p-4 flex items-center justify-between shadow-sm z-30">
+                        <div className="bg-white/5 border-b border-white/5 p-4 flex items-center justify-between shadow-sm z-30 backdrop-blur-sm">
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={() => setViewState('summary')}
@@ -271,7 +271,7 @@ export function SystemJunk() {
 
                         <div className="flex flex-1 overflow-hidden">
                             {/* Sidebar */}
-                            <div className="w-72 bg-[#151520] border-r border-white/5 overflow-y-auto">
+                            <div className="w-72 bg-black/20 border-r border-white/5 overflow-y-auto">
                                 <div className="p-4">
                                     <div className="text-xs font-bold text-white/30 uppercase tracking-wider mb-3 pl-2">Categories</div>
                                     <div className="space-y-1">
@@ -305,7 +305,7 @@ export function SystemJunk() {
                             </div>
 
                             {/* Main List */}
-                            <div className="flex-1 bg-[#1E1E2E] flex flex-col">
+                            <div className="flex-1 bg-transparent flex flex-col">
                                 {/* Category Header */}
                                 <div className="p-6 border-b border-white/5">
                                     <div className="flex items-center justify-between">
@@ -370,11 +370,11 @@ export function SystemJunk() {
                                 </div>
 
                                 {/* Floating Clean Button */}
-                                <div className="p-6 border-t border-white/10 flex justify-center">
+                                <div className="p-6 border-t border-white/10 flex justify-center bg-black/10 backdrop-blur-md">
                                     <button
                                         onClick={handleClean}
                                         disabled={cleaning || selectedJunkItems.size === 0}
-                                        className="px-8 py-3 rounded-full bg-pink-500 hover:bg-pink-400 text-white font-bold shadow-lg shadow-pink-500/20 transition-all flex items-center gap-2"
+                                        className="px-8 py-3 rounded-full btn-premium bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold transition-all flex items-center gap-2"
                                     >
                                         <span>Clean {formatBytes(selectedSize)}</span>
                                         {cleaning && <span className="animate-pulse">...</span>}

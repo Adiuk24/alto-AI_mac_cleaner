@@ -3,49 +3,35 @@
 
 @layer base {
   :root {
-    /* Deep Purple / Space Theme (Default) */
-    --background: 237 28% 14%;
-    /* #1a1b2e */
-    --foreground: 0 0% 100%;
+    --background: 260 30% 98%;
+    --foreground: 260 10% 10%;
 
-    --card: 243 33% 25%;
-    /* #2d2b55 */
-    --card-foreground: 0 0% 100%;
+    --card: 260 25% 98%;
+    --card-foreground: 260 10% 15%;
 
-    --popover: 237 28% 14%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 260 25% 98%;
+    --popover-foreground: 260 10% 15%;
 
-    --primary: 173 58% 55%;
-    /* #4ecdc4 */
-    --primary-foreground: 237 28% 14%;
+    --primary: 330 80% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 243 33% 35%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 260 20% 96%;
+    --secondary-foreground: 260 10% 20%;
 
-    --muted: 237 20% 20%;
-    --muted-foreground: 237 20% 70%;
+    --muted: 260 10% 94%;
+    --muted-foreground: 260 5% 45%;
 
-    --accent: 0 100% 71%;
-    /* #ff6b6b */
-    --accent-foreground: 0 0% 100%;
+    --accent: 260 20% 96%;
+    --accent-foreground: 260 10% 15%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 85% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 243 33% 30%;
-    --input: 243 33% 30%;
-    --ring: 173 58% 55%;
+    --border: 260 15% 92%;
+    --input: 260 15% 92%;
+    --ring: 330 80% 60%;
 
     --radius: 1rem;
-  }
-
-  .light {
-    /* Optional: Light mode override if needed, but we focus on Space theme */
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    /* ... keep default light values if we want dual support, 
-       but user requested "Deep Purple/Space" theme specifically. 
-       We will prioritize the dark/space look as default. */
   }
 }
 
@@ -55,23 +41,102 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply text-white antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background: radial-gradient(circle at top left, #2d2b55, #1a1b2e);
+
+    /* 
+      FORCE DARK BACKGROUND
+    */
+    background-color: #0f172a;
+    background-image:
+      radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.4), transparent 40%),
+      radial-gradient(circle at 85% 30%, rgba(219, 39, 119, 0.2), transparent 40%),
+      linear-gradient(125deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%);
+
+    background-attachment: fixed;
+    background-size: cover;
     min-height: 100vh;
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-white/10 backdrop-blur-lg border border-white/10;
-  }
-
-  .glass-strong {
-    @apply bg-gray-900/60 backdrop-blur-xl border border-white/10;
+    @apply bg-white/5 backdrop-blur-2xl border-r border-white/5 shadow-2xl;
   }
 
   .glass-card {
-    @apply bg-white/5 hover:bg-white/10 transition-colors backdrop-blur-md border border-white/5 rounded-2xl;
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    @apply bg-white/10 border-white/20 shadow-2xl transform scale-[1.01];
+  }
+
+  .glass-button {
+    @apply bg-white/5 hover:bg-white/10 active:bg-white/5 border border-white/10 rounded-lg transition-all duration-200 backdrop-blur-lg;
+  }
+
+  .btn-scan {
+    @apply relative rounded-full w-32 h-32 flex items-center justify-center text-white font-bold text-xl tracking-wide shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden;
+
+    background: radial-gradient(circle at 30% 30%, #f472b6, #db2777);
+    box-shadow:
+      0 10px 30px -10px rgba(219, 39, 119, 0.6),
+      inset 0 2px 4px rgba(255, 255, 255, 0.4),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-scan::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+  }
+
+  .btn-scan:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+      0 20px 40px -10px rgba(219, 39, 119, 0.8),
+      inset 0 2px 4px rgba(255, 255, 255, 0.5),
+      inset 0 -4px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-scan:active {
+    transform: translateY(1px) scale(0.98);
+    background: radial-gradient(circle at 30% 30%, #ec4899, #be185d);
+  }
+
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+    transform: skewX(-20deg) translateX(-150%);
+    transition: transform 0.5s;
+    pointer-events: none;
+  }
+
+  .shimmer:hover::before {
+    animation: shimmer-anim 1.5s infinite;
+  }
+
+  @keyframes shimmer-anim {
+    0% {
+      transform: skewX(-20deg) translateX(-150%);
+    }
+
+    100% {
+      transform: skewX(-20deg) translateX(150%);
+    }
   }
 }

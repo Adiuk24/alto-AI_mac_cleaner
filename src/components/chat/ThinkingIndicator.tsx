@@ -1,7 +1,11 @@
 import { motion } from 'framer-motion';
 import { BrainCircuit } from 'lucide-react';
 
-export function ThinkingIndicator() {
+interface ThinkingIndicatorProps {
+    status?: string;
+}
+
+export function ThinkingIndicator({ status }: ThinkingIndicatorProps) {
     return (
         <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -13,9 +17,11 @@ export function ThinkingIndicator() {
                 <div className="absolute inset-0 bg-purple-500/20 rounded-full animate-ping" />
                 <BrainCircuit size={18} className="text-purple-400 relative z-10" />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-medium text-white/90">Thinking...</span>
-                <span className="text-[10px] text-white/50 animate-pulse">Analyzing context & tools</span>
+                <span className="text-[10px] text-white/40 animate-pulse font-mono truncate max-w-[200px]">
+                    {status || "Analyzing context & tools"}
+                </span>
             </div>
         </motion.div>
     );

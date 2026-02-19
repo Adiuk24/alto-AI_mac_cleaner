@@ -1,77 +1,112 @@
 use super::{ScanResult, ScannedItem};
-use std::fs;
-use std::path::Path;
+use walkdir::{WalkDir, DirEntry};
+use sysinfo::Disks;
+use std::sync::Mutex;
 
 const MIN_SIZE_BYTES: u64 = 50 * 1024 * 1024; // 50 MB
-const MAX_SCAN_ENTRIES: usize = 10_000;
 
-fn scan_dir_recursive(p: &Path, results: &mut Vec<ScannedItem>, _errors: &mut Vec<String>, scanned_count: &mut usize) {
-    if *scanned_count > MAX_SCAN_ENTRIES {
-        return;
+// Lazy static for system info to reuse
+lazy_static::lazy_static! {
+    static ref DISKS_REFRESH: Mutex<Disks> = Mutex::new(Disks::new_with_refreshed_list());
+}
+
+fn is_ignored(entry: &DirEntry) -> bool {
+    let file_name = entry.file_name().to_string_lossy();
+    if file_name.starts_with('.') {
+        return true;
     }
 
-    let entries = match fs::read_dir(p) {
-        Ok(e) => e,
-        Err(_e) => {
-            // Ignore permission errors, just log debug if needed
-            return;
+    #[cfg(target_os = "macos")]
+    {
+        // System directories to skip on macOS root scan
+        // We only want user-serviceable content
+        let path_str = entry.path().to_string_lossy();
+        if path_str == "/System" || 
+           path_str == "/bin" || 
+           path_str == "/sbin" || 
+           path_str == "/usr" || 
+           path_str == "/var" || 
+           path_str == "/private" || 
+           path_str == "/dev" || 
+           path_str == "/proc" || 
+           path_str == "/net" ||
+           path_str.starts_with("/Library/Apple") || // Protect Core OS
+           path_str.starts_with("/Library/System") {
+            return true;
         }
-    };
+    }
 
-    for ent in entries.flatten() {
-        let path = ent.path();
-        if path.is_symlink() {
-            continue;
+    #[cfg(target_os = "windows")]
+    {
+        if file_name == "Windows" || file_name == "Program Files" || file_name == "Program Files (x86)" || file_name == "$Recycle.Bin" || file_name == "System Volume Information" {
+            // Optional: User might want to inspect Program Files, but usually it's system managed.
+            // Let's allow Program Files but maybe skip Windows folder strictly.
+            if file_name == "Windows" { return true; }
         }
-        
-        let meta = match ent.metadata() {
-            Ok(m) => m,
-            Err(_) => continue,
-        };
+    }
+    
+    false
+}
 
-        if meta.is_dir() {
-            scan_dir_recursive(&path, results, _errors, scanned_count);
-        } else {
-            *scanned_count += 1;
-            if meta.len() >= MIN_SIZE_BYTES {
+pub fn scan_large_files(_home: &str) -> ScanResult {
+    let mut items = Vec::new();
+    let errors = Vec::new();
+    
+    // Refresh disks
+    let mut disks_lock = DISKS_REFRESH.lock().unwrap();
+    disks_lock.refresh_list();
+
+    let disks: Vec<_> = disks_lock.list().iter().map(|d| d.mount_point().to_owned()).collect();
+
+    for mount_point in disks {
+        // Prepare walker
+        let walker = WalkDir::new(&mount_point)
+            .follow_links(false)
+            .same_file_system(true) // Don't cross into network drives or other partitions implicitly (we iterate them explicitly)
+            .into_iter()
+            .filter_entry(|e| !is_ignored(e));
+
+        for entry in walker {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(_) => continue,
+            };
+
+            if entry.file_type().is_dir() {
+                continue;
+            }
+
+            let len = match entry.metadata() {
+                Ok(m) => m.len(),
+                Err(_) => 0,
+            };
+
+            if len >= MIN_SIZE_BYTES {
+                let path = entry.path();
                 let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("Other");
                 let category = match ext.to_lowercase().as_str() {
-                    "mp4" | "mov" | "mkv" | "avi" => "Movies",
-                    "zip" | "dmg" | "iso" | "tar" | "gz" => "Archives",
-                    "mp3" | "wav" | "flac" => "Music",
-                    "jpg" | "png" | "heic" | "raw" => "Pictures",
-                    "pdf" | "doc" | "docx" => "Documents",
+                    "mp4" | "mov" | "mkv" | "avi" | "wmv" | "flv" | "webm" | "m4v" => "Movies",
+                    "zip" | "dmg" | "iso" | "tar" | "gz" | "pkg" | "rar" | "7z" => "Archives",
+                    "mp3" | "wav" | "flac" | "aac" | "alac" | "m4a" => "Music",
+                    "jpg" | "png" | "heic" | "raw" | "tiff" | "jpeg" | "webp" => "Pictures",
+                    "pdf" | "doc" | "docx" | "ppt" | "pptx" | "xls" | "xlsx" | "txt" | "md" => "Documents",
                     _ => "Other",
                 };
 
-                results.push(ScannedItem {
+                // Get accessed date for filtering
+                let accessed_date = entry.metadata().ok()
+                    .and_then(|m| m.accessed().ok())
+                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|d| d.as_secs() as i64);
+
+                items.push(ScannedItem {
                     path: path.to_string_lossy().to_string(),
-                    size_bytes: meta.len(),
+                    size_bytes: len,
                     category_name: category.to_string(),
                     is_directory: false,
+                    accessed_date,
                 });
             }
-        }
-    }
-}
-
-pub fn scan_large_files(home: &str) -> ScanResult {
-    let home = Path::new(home);
-    // Scan Downloads and Documents by default
-    let targets = vec![
-        home.join("Downloads"),
-        home.join("Documents"),
-        home.join("Movies"),
-        home.join("Music"),
-    ];
-
-    let mut items = Vec::new();
-    let mut errors = Vec::new();
-    let mut scanned_count = 0;
-
-    for target in targets {
-        if target.exists() {
-            scan_dir_recursive(&target, &mut items, &mut errors, &mut scanned_count);
         }
     }
 

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Alto: Premium AI Mac Cleaner"
 authors = ["Arif Adito"]
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.77"
 default-run = "alto"
 
 [lib]
@@ -20,14 +20,14 @@ name = "alto_helper"
 path = "src/bin/alto_helper.rs"
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.0.5", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["macos-private-api", "protocol-asset", "tray-icon"] }
-tauri-plugin-shell = "2"
-tauri-plugin-notification = "2"
-tauri-plugin-updater = "2"
-tauri-plugin-process = "2"
+tauri = { version = "2.2", features = ["macos-private-api", "protocol-asset", "tray-icon"] }
+tauri-plugin-shell = "2.2"
+tauri-plugin-notification = "2.2"
+tauri-plugin-updater = "2.2"
+tauri-plugin-process = "2.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 dirs = "5"
@@ -41,6 +41,7 @@ lazy_static = "1.4"
 walkdir = "2.3"
 rand = "0.8"
 notify = "6.1.1"
+tauri-plugin-positioner = { version = "2", features = ["tray-icon"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 plist = "1.7.4"

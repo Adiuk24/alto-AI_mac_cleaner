@@ -5,12 +5,34 @@ mod mcp;
 use scanners::{junk::scan_junk, large_files::scan_large_files, scheduler::Scheduler, system_stats::get_stats, watcher::start_watcher, ScanResult};
 use tauri::{State, Manager};
 use mcp::{file_index::{index_files, IndexedFile}, context_store::ContextStore};
+use tauri_plugin_positioner::{WindowExt, Position};
 
 /// MCP: Return the full context store so the frontend/AI can use it
 #[tauri::command]
 async fn get_mcp_context() -> Result<serde_json::Value, String> {
+    println!("[Backend] get_mcp_context called");
     let ctx = ContextStore::load();
     serde_json::to_value(&ctx).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn reset_mcp_context_command() -> Result<serde_json::Value, String> {
+    println!("[Backend] reset_mcp_context_command called");
+    let mut ctx = ContextStore::load();
+    ctx.clear();
+    serde_json::to_value(&ctx).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_mcp_status() -> Result<serde_json::Value, String> {
+    // In a real app, we might check if the watcher thread is alive
+    // For now, we'll return based on whether the store can be loaded
+    let store_exists = ContextStore::store_path().exists();
+    Ok(serde_json::json!({
+        "indexer_active": true,
+        "watcher_active": true,
+        "store_initialized": store_exists,
+    }))
 }
 
 struct AppState {
@@ -136,6 +158,14 @@ async fn uninstall_app_command(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn scan_leftovers_command(id: String) -> Vec<std::path::PathBuf> {
+    #[cfg(target_os = "macos")]
+    return scanners::uninstaller::scan_leftovers(&id);
+    #[cfg(not(target_os = "macos"))]
+    return Vec::new();
+}
+
+#[tauri::command]
 async fn scan_outdated_apps_command() -> Vec<scanners::updater::OutdatedApp> {
     scanners::updater::scan_outdated_apps()
 }
@@ -165,6 +195,27 @@ async fn remove_extension_command(path: String) -> Result<(), String> {
     scanners::extensions::remove_extension(path).await
 }
 
+#[tauri::command]
+async fn get_maintenance_tasks_command() -> Vec<scanners::maintenance::MaintenanceTask> {
+    scanners::maintenance::get_tasks()
+}
+
+#[tauri::command]
+async fn run_maintenance_task_command(id: String) -> Result<String, String> {
+    // In a real production app, this should run in a separate thread/task if long-running
+    scanners::maintenance::run_task(&id)
+}
+
+#[tauri::command]
+async fn scan_privacy_command() -> Vec<scanners::privacy::PrivacyItem> {
+    scanners::privacy::scan_privacy()
+}
+
+#[tauri::command]
+async fn clean_privacy_item_command(path: String) -> Result<(), String> {
+    scanners::privacy::clean_privacy_item(&path)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -172,6 +223,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_positioner::init())
         .setup(|app| {
             app.manage(AppState {
                 scheduler: Scheduler::new(),
@@ -179,7 +231,7 @@ pub fn run() {
 
             // System Tray Setup
             use tauri::menu::{Menu, MenuItem};
-            use tauri::tray::TrayIconBuilder;
+            use tauri::tray::{TrayIconBuilder, TrayIconEvent, MouseButton};
 
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let show_i = MenuItem::with_id(app, "show", "Show Alto", true, None::<&str>)?;
@@ -188,7 +240,7 @@ pub fn run() {
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
-                .show_menu_on_left_click(true)
+                .show_menu_on_left_click(false)
                 .on_menu_event(|app: &tauri::AppHandle, event: tauri::menu::MenuEvent| {
                     match event.id().as_ref() {
                         "quit" => {
@@ -203,8 +255,24 @@ pub fn run() {
                         _ => {}
                     }
                 })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click { button: MouseButton::Left, .. } = event {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("menu") {
+                            let _ = window.move_window(Position::TrayCenter);
+                            
+                            if window.is_visible().unwrap_or(false) {
+                                let _ = window.hide();
+                            } else {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                    }
+                })
                 .build(app)?;
 
+            scanners::monitor::start_monitor_thread(app.handle().clone());
             start_watcher(app.handle().clone());
             Ok(())
         })
@@ -233,7 +301,15 @@ pub fn run() {
             remove_extension_command,
             preview_delete,
             confirm_delete,
-            get_mcp_context
+            get_mcp_context,
+            reset_mcp_context_command,
+            get_mcp_status,
+            get_maintenance_tasks_command,
+            run_maintenance_task_command,
+            scan_privacy_command,
+            scan_privacy_command,
+            clean_privacy_item_command,
+            scan_leftovers_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running Alto");

@@ -32,7 +32,7 @@ pub struct ContextStore {
 }
 
 impl ContextStore {
-    fn store_path() -> PathBuf {
+    pub fn store_path() -> PathBuf {
         let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
         home.join(".alto").join("context.json")
     }
@@ -79,14 +79,11 @@ impl ContextStore {
         self.save();
     }
 
-    /// Get recent events for AI context (last N events)
-    #[allow(dead_code)]
-    pub fn recent_events(&self, n: usize) -> Vec<&SystemEvent> {
-        let len = self.system_events.len();
-        if len <= n {
-            self.system_events.iter().collect()
-        } else {
-            self.system_events[len - n..].iter().collect()
-        }
+    pub fn clear(&mut self) {
+        self.last_scan_timestamp = None;
+        self.deletion_history.clear();
+        self.system_events.clear();
+        // we keep user_preferences
+        self.save();
     }
 }

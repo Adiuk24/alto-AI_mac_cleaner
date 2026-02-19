@@ -3,6 +3,7 @@ export interface ScannedItem {
     size_bytes: number;
     category_name: string;
     is_directory: boolean;
+    accessed_date?: number; // timestamp in seconds
 }
 
 export interface ScanResult {

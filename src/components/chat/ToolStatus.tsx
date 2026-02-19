@@ -34,13 +34,15 @@ export function ToolStatus({ toolName, state }: ToolStatusProps) {
                 ) : (
                     <CheckCircle2 size={14} className="text-emerald-400" />
                 )}
-                <Icon size={14} className="opacity-50" />
-            </div>
 
-            <span className="text-xs font-mono tracking-wide">
-                {state === 'running' ? 'EXECUTING: ' : 'COMPLETED: '}
-                <span className="font-bold uppercase">{toolName.replace(/_/g, ' ')}</span>
-            </span>
+                <span className="text-xs font-mono tracking-wide">
+                    {state === 'running' ? (
+                        <>EXECUTING: <span className="font-bold uppercase">{toolName.replace(/_/g, ' ')}</span></>
+                    ) : (
+                        <span className="font-medium opacity-80 capitalize">{toolName.replace(/_/g, ' ')}</span>
+                    )}
+                </span>
+            </div>
         </motion.div>
     );
 }
