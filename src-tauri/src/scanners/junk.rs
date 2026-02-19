@@ -153,7 +153,14 @@ pub fn scan_junk(home: &str) -> ScanResult {
             .max_depth(depth)
             .into_iter();
 
-        for entry in walker.filter_map(|e| e.ok()) {
+        for entry in walker {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(e) => {
+                    eprintln!("Error scanning {}: {}", full.display(), e);
+                    continue;
+                }
+            };
             let path = entry.path();
             
             // We only want to delete FILES, not directories (unless empty, but simpler to just do files)

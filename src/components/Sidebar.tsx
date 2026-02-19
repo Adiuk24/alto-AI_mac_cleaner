@@ -1,4 +1,4 @@
-import { LayoutDashboard, Trash2, Shield, Zap, Hammer, HardDrive, Files, Settings, Sparkles, RefreshCw, Puzzle, FileX, Mail, Eye, TrashIcon } from 'lucide-react';
+import { LayoutDashboard, Trash2, Shield, Zap, Hammer, HardDrive, Files, Settings, Sparkles, RefreshCw, Puzzle, FileX, Mail, Eye } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { motion } from 'framer-motion';
 import { useScanStore } from '../store/scanStore';
@@ -24,7 +24,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             items: [
                 { id: 'system-junk', label: 'System Junk', icon: Trash2, badge: junkResult?.total_size_bytes },
                 { id: 'mail', label: 'Mail Attachments', icon: Mail },
-                { id: 'trash-bins', label: 'Trash Bins', icon: TrashIcon },
+                { id: 'trash-bins', label: 'Trash Bins', icon: Trash2 },
             ]
         },
         {

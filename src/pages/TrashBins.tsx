@@ -25,10 +25,11 @@ export function TrashBins() {
             // Scan common trash locations
             const foundItems: TrashItem[] = [];
             const result = await call<any>('scan_junk_command');
+            console.log('Trash Scan Result:', result); // DEBUG
             if (result?.items) {
                 foundItems.push(...result.items.filter((i: any) => i.path.includes('.Trash')).map((i: any) => ({
                     path: i.path,
-                    size_bytes: i.size_bytes,
+                    size_bytes: Number(i.size_bytes),
                     name: i.path.split('/').pop() || i.path
                 })));
             }
