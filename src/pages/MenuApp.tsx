@@ -219,11 +219,11 @@ export function MenuApp() {
 
                     <div className="space-y-3 pl-1">
                         <div className="flex items-center gap-3 text-xs">
-                            <span className="text-white/90 font-bold min-w-[12px]">↑</span>
+                            <span className="text-white/90 font-bold min-w-3">↑</span>
                             <span className="text-white/60">Using {stats ? formatSpeed(stats.network_up) : '0 B/s'}</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs">
-                            <span className="text-white/90 font-bold min-w-[12px]">↓</span>
+                            <span className="text-white/90 font-bold min-w-3">↓</span>
                             <span className="text-white/60">Using {stats ? formatSpeed(stats.network_down) : '0 B/s'}</span>
                         </div>
                     </div>
@@ -283,7 +283,7 @@ export function MenuApp() {
                 {/* Footer */}
                 <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
                     <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-                        <div className="w-5 h-4 bg-gradient-to-br from-pink-500 to-purple-600 rounded-sm shadow-md"></div>
+                        <div className="w-5 h-4 bg-linear-to-br from-pink-500 to-purple-600 rounded-sm shadow-md"></div>
                     </div>
                     <button className="text-xs font-medium hover:text-white transition-colors">Show CleanMyMac</button>
                     <div className="w-5 h-5 flex items-center justify-center cursor-pointer hover:bg-white/10 rounded-full transition-colors">

@@ -114,7 +114,7 @@ export function Optimization() {
                                 <div className="relative w-80 h-80 flex items-center justify-center">
                                     <div className="absolute inset-0 bg-primary/20 rounded-full blur-[80px] animate-pulse" />
                                     <div className="relative w-72 h-72 rounded-[3.5rem] glass-frost border border-white/10 flex items-center justify-center shadow-2xl overflow-hidden group">
-                                        <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                        <div className="absolute inset-0 bg-linear-to-tr from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                                         {/* Slider Graphic Sim */}
                                         <div className="flex gap-8 items-center justify-center relative z-10">
                                             {[0.7, 0.4, 0.8].map((val, i) => (

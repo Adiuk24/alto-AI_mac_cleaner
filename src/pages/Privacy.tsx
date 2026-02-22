@@ -89,7 +89,7 @@ export function Privacy() {
     if (!scanned && !scanning) {
         return (
             <div className="h-full flex flex-col items-center justify-center p-10 text-center">
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center mb-8 shadow-2xl shadow-orange-500/30">
+                <div className="w-32 h-32 rounded-full bg-linear-to-br from-amber-400 to-orange-600 flex items-center justify-center mb-8 shadow-2xl shadow-orange-500/30">
                     <Eye className="w-16 h-16 text-white/90" strokeWidth={1.5} />
                 </div>
 
@@ -135,7 +135,7 @@ export function Privacy() {
     if (cleaned) {
         return (
             <div className="h-full flex flex-col items-center justify-center p-10 text-center">
-                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center mb-8 shadow-2xl shadow-emerald-500/30">
+                <div className="w-28 h-28 rounded-full bg-linear-to-br from-emerald-400 to-green-600 flex items-center justify-center mb-8 shadow-2xl shadow-emerald-500/30">
                     <CheckCircle className="w-14 h-14 text-white" />
                 </div>
                 <h2 className="text-3xl font-bold mb-2">Privacy Secured!</h2>

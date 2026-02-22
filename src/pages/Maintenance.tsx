@@ -186,7 +186,7 @@ export function Maintenance() {
 
                                 {/* Terminal Output Box */}
                                 <div className="flex-1 w-full glass-frost rounded-[2rem] border border-white/10 p-8 font-mono text-xs overflow-hidden flex flex-col shadow-2xl relative group">
-                                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                                    <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
 
                                     <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
                                         <div className="flex items-center gap-3 text-white/40">

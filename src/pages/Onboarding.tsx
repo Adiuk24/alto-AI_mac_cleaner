@@ -56,7 +56,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                             exit={{ opacity: 0, y: -20 }}
                             className="text-center space-y-8"
                         >
-                            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mx-auto flex items-center justify-center shadow-2xl shadow-purple-500/30">
+                            <div className="w-20 h-20 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl mx-auto flex items-center justify-center shadow-2xl shadow-purple-500/30">
                                 <Sparkles size={40} className="text-white" />
                             </div>
 

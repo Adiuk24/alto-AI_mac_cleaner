@@ -231,7 +231,7 @@ export function SpaceLens() {
                         className="flex-1 flex flex-col items-center justify-center z-10"
                     >
                         <div className="mb-8 relative">
-                            <div className="w-64 h-64 rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 animate-pulse shadow-2xl flex items-center justify-center">
+                            <div className="w-64 h-64 rounded-full bg-linear-to-br from-emerald-500 to-teal-700 animate-pulse shadow-2xl flex items-center justify-center">
                                 <Search size={64} className="text-white/20" />
                                 <div className="absolute inset-0 border-4 border-white/20 border-t-white rounded-full animate-spin" />
                             </div>

@@ -471,7 +471,7 @@ export function LargeFiles() {
                         <button
                             onClick={handleClean}
                             disabled={selectedItems.size === 0}
-                            className="h-12 px-8 rounded-full bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 disabled:opacity-30 disabled:hover:from-pink-500 disabled:hover:to-rose-600 text-white font-semibold shadow-lg shadow-pink-900/20 transition-all active:scale-95 flex items-center gap-2"
+                            className="h-12 px-8 rounded-full bg-linear-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 disabled:opacity-30 disabled:hover:from-pink-500 disabled:hover:to-rose-600 text-white font-semibold shadow-lg shadow-pink-900/20 transition-all active:scale-95 flex items-center gap-2"
                         >
                             <Trash2 size={18} />
                             <span>Remove</span>

@@ -183,7 +183,7 @@ export function Uninstaller({ onNavigate }: UninstallerProps) {
     }, [apps, selectedApps]);
 
     return (
-        <div className="h-full w-full flex flex-col font-sans overflow-hidden relative bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#020617] text-white">
+        <div className="h-full w-full flex flex-col font-sans overflow-hidden relative bg-linear-to-br from-[#1E293B] via-[#0F172A] to-[#020617] text-white">
 
             {/* Ambient Background Accents ("Soft Aqua") */}
             <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
@@ -219,7 +219,7 @@ export function Uninstaller({ onNavigate }: UninstallerProps) {
 
             <div className="flex flex-1 overflow-hidden z-10 min-w-0">
                 {/* Sidebar - fixed width so it doesn't collapse */}
-                <div className="w-64 min-w-[12rem] shrink-0 bg-black/20 border-r border-white/5 flex flex-col backdrop-blur-md overflow-y-auto">
+                <div className="w-64 min-w-48 shrink-0 bg-black/20 border-r border-white/5 flex flex-col backdrop-blur-md overflow-y-auto">
                     <div className="p-4 space-y-6">
                         {/* Categories */}
                         <div>
@@ -353,7 +353,7 @@ export function Uninstaller({ onNavigate }: UninstallerProps) {
                                             onClick={() => handleToggleSelect(app.path)}
                                             className={`group flex items-center gap-4 py-3 px-4 rounded-xl cursor-pointer border transition-all duration-200 relative overflow-hidden ${isSelected
                                                 ? 'bg-cyan-900/20 border-cyan-500/30 shadow-lg shadow-black/20'
-                                                : 'bg-white/[0.02] border-transparent hover:bg-white/[0.05] hover:border-white/10'
+                                                : 'bg-white/2 border-transparent hover:bg-white/5 hover:border-white/10'
                                                 }`}
                                         >
                                             {/* Selection Highlight Bar */}
@@ -362,7 +362,7 @@ export function Uninstaller({ onNavigate }: UninstallerProps) {
                                             {/* Checkbox */}
                                             <div className="w-8 flex justify-center shrink-0 z-10">
                                                 <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-300 ${isSelected
-                                                    ? 'bg-gradient-to-br from-cyan-400 to-blue-500 border-transparent scale-110'
+                                                    ? 'bg-linear-to-br from-cyan-400 to-blue-500 border-transparent scale-110'
                                                     : 'border-white/20 group-hover:border-white/40 bg-black/20'
                                                     }`}>
                                                     {isSelected && <div className="w-2 h-2 bg-white rounded-full shadow-sm" />}
@@ -461,9 +461,9 @@ export function Uninstaller({ onNavigate }: UninstallerProps) {
                                 animate={{ y: 0, opacity: 1 }}
                                 exit={{ y: 100, opacity: 0 }}
                                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                                className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-[#1e1e2e]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/80 p-2 pr-6 flex items-center gap-5 z-30 min-w-[320px]"
+                                className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-[#1e1e2e]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/80 p-2 pr-6 flex items-center gap-5 z-30 min-w-80"
                             >
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
+                                <div className="w-12 h-12 rounded-xl bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
                                     <Trash2 size={20} className="text-white" />
                                 </div>
 

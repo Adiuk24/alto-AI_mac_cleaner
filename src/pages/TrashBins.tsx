@@ -62,7 +62,7 @@ export function TrashBins() {
         return (
             <div className="h-full flex flex-col items-center justify-center p-10 text-center">
                 {/* Hero illustration */}
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-8 shadow-2xl shadow-teal-500/30">
+                <div className="w-32 h-32 rounded-full bg-linear-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-8 shadow-2xl shadow-teal-500/30">
                     <Trash2 className="w-16 h-16 text-white/90" strokeWidth={1.5} />
                 </div>
 
@@ -116,7 +116,7 @@ export function TrashBins() {
     // Results state
     return (
         <div className="h-full flex flex-col items-center justify-center p-10 text-center">
-            <div className="w-28 h-28 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-8 shadow-2xl shadow-teal-500/30">
+            <div className="w-28 h-28 rounded-full bg-linear-to-br from-teal-400 to-emerald-600 flex items-center justify-center mb-8 shadow-2xl shadow-teal-500/30">
                 {cleaned
                     ? <CheckCircle className="w-14 h-14 text-white" />
                     : <Trash2 className="w-14 h-14 text-white/90" strokeWidth={1.5} />

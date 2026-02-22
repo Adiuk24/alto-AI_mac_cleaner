@@ -72,7 +72,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
         <div className="h-full relative overflow-hidden flex flex-col items-center justify-center">
 
             {/* Subtle Ambient Glows - simplified to let CSS bg shine */}
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-full bg-linear-to-b from-white/5 to-transparent pointer-events-none" />
 
             <AnimatePresence mode="wait">
                 {scanStatus === 'idle' && (
@@ -94,7 +94,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                             <div className="w-80 h-56 rounded-3xl glass-frost flex items-center justify-center relative shadow-[0_0_80px_rgba(139,92,246,0.15)] overflow-hidden">
                                 {/* Dynamic Gradient Glow — opacity only so it never overflows */}
                                 <motion.div
-                                    className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-purple-500/5 to-indigo-500/10"
+                                    className="absolute inset-0 bg-linear-to-tr from-primary/10 via-purple-500/5 to-indigo-500/10"
                                     animate={{
                                         opacity: [0.5, 0.8, 0.5]
                                     }}
@@ -116,7 +116,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
                                 {/* Scan Line Animation */}
                                 <motion.div
-                                    className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/20 to-transparent h-1"
+                                    className="absolute inset-0 bg-linear-to-b from-transparent via-primary/20 to-transparent h-1"
                                     animate={{ top: ["-10%", "110%"] }}
                                     transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                                 />

@@ -23,7 +23,7 @@ export function SystemOverviewWidget({ stats, junkSize, onClean, onNavigate }: S
             className="w-full max-w-sm bg-[#1E1E2E]/80 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-2xl my-4 text-white"
         >
             {/* Header / Protection Status */}
-            <div className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 p-4 flex items-center justify-between border-b border-white/5">
+            <div className="bg-linear-to-r from-emerald-500/20 to-teal-500/20 p-4 flex items-center justify-between border-b border-white/5">
                 <div className="flex items-center gap-2">
                     <ShieldCheck className="text-emerald-400" size={18} />
                     <span className="font-semibold text-sm text-emerald-100">System Protected</span>

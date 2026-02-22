@@ -35,14 +35,14 @@ export function AiInsight({ insight, loading }: AiInsightProps) {
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-2xl mx-auto my-6 p-1 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500"
+            className="w-full max-w-2xl mx-auto my-6 p-1 rounded-2xl bg-linear-to-r from-pink-500 via-purple-500 to-indigo-500"
         >
             <div className="bg-background/90 backdrop-blur-xl rounded-xl p-6 flex items-start gap-4">
-                <div className="p-3 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl text-white shrink-0 shadow-lg shadow-purple-500/20">
+                <div className="p-3 bg-linear-to-br from-pink-500 to-purple-600 rounded-xl text-white shrink-0 shadow-lg shadow-purple-500/20">
                     <Sparkles className={loading || isTyping ? "animate-spin-slow" : ""} size={24} />
                 </div>
                 <div className="flex-1 text-left">
-                    <h3 className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-500 mb-1 uppercase tracking-wider">
+                    <h3 className="text-sm font-bold bg-clip-text text-transparent bg-linear-to-r from-pink-500 to-purple-500 mb-1 uppercase tracking-wider">
                         AI Analysis
                     </h3>
                     {loading ? (

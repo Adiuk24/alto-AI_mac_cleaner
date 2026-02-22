@@ -41,7 +41,7 @@ export function Extensions() {
     return (
         <div className="h-full flex flex-col pt-8 px-6">
             <div className="mb-6">
-                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500">Extensions</h1>
+                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-yellow-400 to-orange-500">Extensions</h1>
                 <p className="text-white/60 mt-1">Manage Launch Agents and startup items to speed up boot time.</p>
             </div>
 

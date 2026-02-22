@@ -31,7 +31,7 @@ export function SmartScanResults({
                 <div className="flex flex-col items-center text-center group">
                     <div className="w-32 h-32 mb-6 relative">
                         <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full group-hover:bg-blue-500/30 transition-colors" />
-                        <div className="relative w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-xl flex items-center justify-center border border-white/20">
+                        <div className="relative w-full h-full bg-linear-to-br from-blue-400 to-blue-600 rounded-2xl shadow-xl flex items-center justify-center border border-white/20">
                             <HardDrive size={64} className="text-white drop-shadow-lg" />
                         </div>
                         <motion.div
@@ -59,7 +59,7 @@ export function SmartScanResults({
                 <div className="flex flex-col items-center text-center group">
                     <div className="w-32 h-32 mb-6 relative">
                         <div className="absolute inset-0 bg-emerald-500/20 blur-2xl rounded-full group-hover:bg-emerald-500/30 transition-colors" />
-                        <div className="relative w-full h-full bg-gradient-to-br from-emerald-400 to-teal-600 rounded-full shadow-xl flex items-center justify-center border border-white/20">
+                        <div className="relative w-full h-full bg-linear-to-br from-emerald-400 to-teal-600 rounded-full shadow-xl flex items-center justify-center border border-white/20">
                             <ShieldCheck size={64} className="text-white drop-shadow-lg" />
                         </div>
                         <motion.div
@@ -83,7 +83,7 @@ export function SmartScanResults({
                 <div className="flex flex-col items-center text-center group">
                     <div className="w-32 h-32 mb-6 relative">
                         <div className="absolute inset-0 bg-pink-500/20 blur-2xl rounded-full group-hover:bg-pink-500/30 transition-colors" />
-                        <div className="relative w-full h-full bg-gradient-to-br from-pink-400 to-purple-600 rounded-full shadow-xl flex items-center justify-center border border-white/20">
+                        <div className="relative w-full h-full bg-linear-to-br from-pink-400 to-purple-600 rounded-full shadow-xl flex items-center justify-center border border-white/20">
                             <Gauge size={64} className="text-white drop-shadow-lg" />
                         </div>
                         <motion.div
@@ -112,7 +112,7 @@ export function SmartScanResults({
                 className="relative group"
             >
                 <div className="absolute inset-0 bg-blue-500/40 blur-xl rounded-full group-hover:bg-blue-500/60 transition-colors animate-pulse" />
-                <div className="relative px-12 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full border border-white/20 shadow-2xl flex items-center gap-3">
+                <div className="relative px-12 py-4 bg-linear-to-r from-blue-500 to-indigo-600 rounded-full border border-white/20 shadow-2xl flex items-center gap-3">
                     <span className="text-xl font-bold text-white tracking-wide">Run</span>
                     <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
                         <ChevronRight size={16} className="text-white" />

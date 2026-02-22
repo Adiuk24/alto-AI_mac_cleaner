@@ -98,7 +98,7 @@ export function Updater() {
                                 </div>
 
                                 {/* App Icon Placeholder */}
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-lg ${i === selectedAppIndex ? 'bg-gradient-to-br from-teal-400 to-emerald-600' : 'bg-white/10'
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-lg ${i === selectedAppIndex ? 'bg-linear-to-br from-teal-400 to-emerald-600' : 'bg-white/10'
                                     }`}>
                                     {app.name.charAt(0)}
                                 </div>
@@ -113,7 +113,7 @@ export function Updater() {
                 </div>
 
                 {/* Right Panel: Details */}
-                <div className="flex-1 bg-gradient-to-br from-[#113C36] to-[transparent] p-10 flex flex-col relative">
+                <div className="flex-1 bg-linear-to-br from-[#113C36] to-[transparent] p-10 flex flex-col relative">
                     {selectedApp ? (
                         <motion.div
                             key={selectedApp.name}
@@ -158,7 +158,7 @@ export function Updater() {
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="w-24 h-24 rounded-full bg-gradient-to-t from-white/10 to-white/5 backdrop-blur-md border border-white/10 shadow-2xl flex items-center justify-center flex-col gap-1 group"
+                            className="w-24 h-24 rounded-full bg-linear-to-t from-white/10 to-white/5 backdrop-blur-md border border-white/10 shadow-2xl flex items-center justify-center flex-col gap-1 group"
                         >
                             <span className="text-sm font-bold text-white/80 group-hover:text-teal-200">Update</span>
                         </motion.button>

@@ -495,7 +495,7 @@ Would you like me to clean any of these? Just say the word.`;
             <div className="flex-1 overflow-y-auto px-4 md:px-12 lg:px-16 pt-28 pb-48 scroll-smooth no-scrollbar">
                 <div className="max-w-4xl mx-auto">
                     {/* Contained conversation surface - pro dashboard feel */}
-                    <div className="min-h-[60vh] rounded-2xl border border-white/[0.06] bg-white/[0.02] shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset] px-6 md:px-10 py-8 md:py-10">
+                    <div className="min-h-[60vh] rounded-2xl border border-white/6 bg-white/2 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset] px-6 md:px-10 py-8 md:py-10">
                         <div className="space-y-10 max-w-3xl mx-auto">
                             {messages.map((msg) => (
                                 <motion.div
@@ -511,7 +511,7 @@ Would you like me to clean any of these? Just say the word.`;
                                     {/* Avatar for Assistant */}
                                     {msg.role === 'assistant' && (
                                         <div className="shrink-0 pt-0.5">
-                                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/25 to-purple-500/15 flex items-center justify-center border border-white/10 shadow-sm">
+                                            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-indigo-500/25 to-purple-500/15 flex items-center justify-center border border-white/10 shadow-sm">
                                                 <Sparkles size={16} className="text-indigo-300/90" />
                                             </div>
                                         </div>
@@ -559,10 +559,10 @@ Would you like me to clean any of these? Just say the word.`;
                                             "rounded-2xl text-[15px] leading-[1.65] relative max-w-[90%] md:max-w-[85%]",
                                             msg.role === 'user'
                                                 ? "px-5 py-3.5 bg-primary text-white shadow-lg shadow-primary/25 border border-white/10 rounded-tr-md"
-                                                : "px-5 py-4 rounded-tl-md glass-frost text-white/95 border border-white/[0.06] shadow-sm"
+                                                : "px-5 py-4 rounded-tl-md glass-frost text-white/95 border border-white/6 shadow-sm"
                                         )}>
                                             {msg.role === 'user' ? (
-                                                <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                                                <p className="whitespace-pre-wrap wrap-break-word">{msg.text}</p>
                                             ) : (
                                                 <div className="chat-prose markdown-body [&_strong]:font-semibold [&_strong]:text-white [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ul]:pl-5 [&_li]:mb-0.5 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:bg-white/10 [&_code]:text-[14px] [&_pre]:my-3 [&_pre]:p-3 [&_pre]:rounded-xl [&_pre]:bg-black/30 [&_pre]:overflow-x-auto">
                                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -644,12 +644,12 @@ Would you like me to clean any of these? Just say the word.`;
                                 className="flex gap-5 justify-start"
                             >
                                 <div className="mt-1 shrink-0">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-500/10 flex items-center justify-center border border-white/5">
+                                    <div className="w-8 h-8 rounded-full bg-linear-to-br from-purple-500/20 to-indigo-500/10 flex items-center justify-center border border-white/5">
                                         <Sparkles size={14} className="text-purple-300" />
                                     </div>
                                 </div>
                                 <div className="flex-1 max-w-lg">
-                                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
+                                    <div className="rounded-2xl border border-white/10 bg-white/3 overflow-hidden">
                                         {/* Header */}
                                         <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                                             <div className="flex items-center gap-2">
@@ -672,7 +672,7 @@ Would you like me to clean any of these? Just say the word.`;
                                         {deepScan.active && (
                                             <div className="h-0.5 bg-white/5">
                                                 <motion.div
-                                                    className="h-full bg-gradient-to-r from-purple-500 to-indigo-400"
+                                                    className="h-full bg-linear-to-r from-purple-500 to-indigo-400"
                                                     animate={{ width: `${deepScan.entries[deepScan.entries.length - 1]?.percent ?? 0}%` }}
                                                     transition={{ duration: 0.4 }}
                                                 />
@@ -724,7 +724,7 @@ Would you like me to clean any of these? Just say the word.`;
                             >
                                 {/* Alto avatar */}
                                 <div className="mt-1 shrink-0">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/10 flex items-center justify-center border border-white/5 shadow-inner">
+                                    <div className="w-8 h-8 rounded-full bg-linear-to-br from-indigo-500/20 to-purple-500/10 flex items-center justify-center border border-white/5 shadow-inner">
                                         <Sparkles size={14} className="text-indigo-300" />
                                     </div>
                                 </div>
@@ -790,7 +790,7 @@ Would you like me to clean any of these? Just say the word.`;
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="absolute inset-0 rounded-3xl bg-gradient-to-r from-primary/10 via-transparent to-primary/10 pointer-events-none"
+                                    className="absolute inset-0 rounded-3xl bg-linear-to-r from-primary/10 via-transparent to-primary/10 pointer-events-none"
                                 />
                             )}
                         </AnimatePresence>
@@ -822,7 +822,7 @@ Would you like me to clean any of these? Just say the word.`;
                             size="icon"
                             onClick={() => handleSend()}
                             disabled={!input.trim() || isThinking}
-                            className="h-11 w-11 min-w-[44px] rounded-2xl mb-1 mr-1 shadow-none"
+                            className="h-11 w-11 min-w-11 rounded-2xl mb-1 mr-1 shadow-none"
                         >
                             {isThinking ? (
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

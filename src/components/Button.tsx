@@ -20,7 +20,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             primary: "bg-primary text-primary-foreground shadow-[0_4px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_8px_30px_rgba(236,72,153,0.5)] border-transparent",
             secondary: "bg-white/10 text-white hover:bg-white/20 border-white/10 backdrop-blur-md",
             ghost: "bg-transparent text-white/60 hover:text-white hover:bg-white/5 border-transparent",
-            gradient: "bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-pink-500/20 hover:shadow-pink-500/40 border-transparent",
+            gradient: "bg-linear-to-r from-pink-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-pink-500/20 hover:shadow-pink-500/40 border-transparent",
             glass: "glass-frost text-white hover:bg-white/10 border-white/10 hover:border-white/20"
         };
 
@@ -56,7 +56,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 {/* Shimmer Effect for Primary/Gradient */}
                 {(variant === 'primary' || variant === 'gradient') && (
                     <motion.div
-                        className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-150%]"
+                        className="absolute inset-0 rounded-2xl bg-linear-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-150%]"
                         initial={false}
                         whileHover={{
                             translateX: ["150%"],

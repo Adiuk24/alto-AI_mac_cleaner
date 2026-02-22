@@ -143,7 +143,7 @@ export function SystemJunk() {
                                     {/* Ambient Background Glow */}
                                     <div className="absolute inset-0 rounded-full bg-primary/20 blur-[80px] animate-pulse" />
                                     <div className="relative w-72 h-72 rounded-[3rem] glass-frost flex items-center justify-center border border-white/10 shadow-2xl overflow-hidden group">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                        <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                                         <Trash2 className="w-32 h-32 text-primary drop-shadow-[0_0_20px_rgba(236,72,153,0.4)]" strokeWidth={1} />
                                     </div>
                                 </div>
@@ -210,7 +210,7 @@ export function SystemJunk() {
                             <ArrowLeft size={16} /> <span className="text-xs font-bold uppercase tracking-wider">Back</span>
                         </button>
 
-                        <div className="w-44 h-44 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center mb-10 shadow-2xl shadow-primary/30 ring-[12px] ring-white/5 relative group">
+                        <div className="w-44 h-44 rounded-full bg-linear-to-br from-primary to-rose-600 flex items-center justify-center mb-10 shadow-2xl shadow-primary/30 ring-[12px] ring-white/5 relative group">
                             <div className="absolute inset-0 bg-primary/20 blur-2xl group-hover:blur-3xl transition-all duration-500" />
                             <Trash2 className="w-24 h-24 text-white relative z-10" strokeWidth={1} />
                         </div>
@@ -391,7 +391,7 @@ export function SystemJunk() {
                                     <button
                                         onClick={handleClean}
                                         disabled={cleaning || selectedJunkItems.size === 0}
-                                        className="px-8 py-3 rounded-full btn-premium bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold transition-all flex items-center gap-2"
+                                        className="px-8 py-3 rounded-full btn-premium bg-linear-to-r from-pink-500 to-rose-600 text-white font-bold transition-all flex items-center gap-2"
                                     >
                                         <span>Clean {formatBytes(selectedSize)}</span>
                                         {cleaning && <span className="animate-pulse">...</span>}

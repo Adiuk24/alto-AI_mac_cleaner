@@ -46,7 +46,7 @@ interface ContextStore {
 
 function SectionCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`bg-white/[0.04] border border-white/[0.08] rounded-2xl overflow-hidden backdrop-blur-sm ${className}`}>
+        <div className={`bg-white/4 border border-white/8 rounded-2xl overflow-hidden backdrop-blur-sm ${className}`}>
             {children}
         </div>
     );
@@ -65,7 +65,7 @@ function SectionHeader({ icon, title, subtitle, accent = 'purple' }: {
         amber: 'from-amber-500/20 to-orange-500/10 border-amber-500/20 text-amber-400',
     };
     return (
-        <div className={`px-6 py-4 bg-gradient-to-r border-b flex items-center gap-3 ${accents[accent]}`}>
+        <div className={`px-6 py-4 bg-linear-to-r border-b flex items-center gap-3 ${accents[accent]}`}>
             <div className="opacity-80">{icon}</div>
             <div>
                 <h3 className="font-semibold text-white text-sm">{title}</h3>
@@ -366,7 +366,7 @@ export function Settings() {
 
                 {/* ── MCP & Context Server ── */}
                 <SectionCard>
-                    <div className="px-6 py-4 bg-gradient-to-r from-emerald-500/20 to-teal-500/10 border-b border-emerald-500/20 flex items-center justify-between">
+                    <div className="px-6 py-4 bg-linear-to-r from-emerald-500/20 to-teal-500/10 border-b border-emerald-500/20 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Shield size={16} className="text-emerald-400 opacity-80" />
                             <div>
@@ -435,7 +435,7 @@ export function Settings() {
                                         return (
                                             <div key={i} className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border text-xs ${isSuspicious ? 'bg-amber-500/5 border-amber-500/15' :
                                                 isApp ? 'bg-blue-500/5 border-blue-500/10' :
-                                                    'bg-white/[0.02] border-white/5'
+                                                    'bg-white/2 border-white/5'
                                                 }`}>
                                                 <span className="text-base leading-none mt-0.5">
                                                     {isApp ? '📦' : isSuspicious ? '⚠️' : '📥'}
@@ -464,7 +464,7 @@ export function Settings() {
                                         const time = new Date(rec.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                                         const mb = (rec.total_bytes_freed / 1024 / 1024).toFixed(1);
                                         return (
-                                            <div key={i} className="flex items-center justify-between px-3 py-2 bg-white/[0.02] rounded-xl border border-white/5 text-xs">
+                                            <div key={i} className="flex items-center justify-between px-3 py-2 bg-white/2 rounded-xl border border-white/5 text-xs">
                                                 <div className="flex items-center gap-2">
                                                     <Trash2 size={11} className="text-purple-400/60" />
                                                     <span className="text-white/50">{rec.paths_deleted.length} items removed</span>
@@ -579,7 +579,7 @@ export function Settings() {
                                     onClick={() => handleChange('provider', p.id)}
                                     className={`relative flex flex-col items-start p-4 rounded-2xl border transition-all text-left group ${config.provider === p.id
                                         ? 'bg-blue-500/10 border-blue-500/40 rin-1 ring-blue-500/20'
-                                        : 'bg-white/[0.02] border-white/10 hover:border-white/20'
+                                        : 'bg-white/2 border-white/10 hover:border-white/20'
                                         }`}
                                 >
                                     {p.badge && (
@@ -620,7 +620,7 @@ export function Settings() {
                                                 onClick={() => handleChange('model', m.id)}
                                                 className={`flex items-center justify-between p-3 rounded-xl border transition-all ${config.model === m.id
                                                     ? 'bg-white/5 border-white/20'
-                                                    : 'bg-transparent border-transparent hover:bg-white/[0.02]'
+                                                    : 'bg-transparent border-transparent hover:bg-white/2'
                                                     }`}
                                             >
                                                 <div className="text-left">

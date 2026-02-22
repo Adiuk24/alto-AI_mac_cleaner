@@ -99,7 +99,7 @@ const SECTIONS: { id: string; title: string; icon: string; items: { issue: strin
 function Section({ section, defaultOpen }: { section: typeof SECTIONS[0]; defaultOpen?: boolean }) {
     const [open, setOpen] = useState(!!defaultOpen);
     return (
-        <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.02]">
+        <div className="border border-white/10 rounded-xl overflow-hidden bg-white/2">
             <button
                 type="button"
                 onClick={() => setOpen(!open)}
@@ -132,7 +132,7 @@ function Section({ section, defaultOpen }: { section: typeof SECTIONS[0]; defaul
 
 export function Help() {
     return (
-        <div className="h-full overflow-y-auto bg-gradient-to-b from-transparent to-white/[0.02]">
+        <div className="h-full overflow-y-auto bg-linear-to-b from-transparent to-white/2">
             <div className="max-w-3xl mx-auto px-6 py-10 pb-24">
                 <div className="flex items-center gap-3 mb-2">
                     <div className="p-2.5 rounded-xl bg-primary/20 border border-primary/30">

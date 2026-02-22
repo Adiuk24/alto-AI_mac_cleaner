@@ -43,7 +43,7 @@ export function Shredder() {
     return (
         <div className="h-full flex flex-col pt-8 px-6">
             <div className="mb-6">
-                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-200 to-gray-400">Shredder</h1>
+                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-gray-200 to-gray-400">Shredder</h1>
                 <p className="text-white/60 mt-1">Permanently erase files so they cannot be recovered.</p>
             </div>
 

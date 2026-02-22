@@ -43,7 +43,7 @@ export function MailCleaner() {
         <div className="h-full flex flex-col pt-8 px-6">
             <div className="mb-6 flex justify-between items-end">
                 <div>
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-500">Mail Attachments</h1>
+                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-indigo-500">Mail Attachments</h1>
                     <p className="text-white/60 mt-1">Remove local copies of email attachments to save space.</p>
                 </div>
                 {attachments.length > 0 && (

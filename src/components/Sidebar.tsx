@@ -75,12 +75,12 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             initial={{ x: -280, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="h-screen flex-shrink-0 z-50 p-4 pr-0"
+            className="h-screen shrink-0 z-50 p-4 pr-0"
         >
             <div className="w-64 h-full flex flex-col glass-frost rounded-3xl text-white relative border border-white/10 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
                 {/* Logo Area */}
                 <div className="flex items-center gap-3 px-6 py-8">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-lg shadow-primary/20 ring-1 ring-white/20">
+                    <div className="w-9 h-9 rounded-xl bg-linear-to-br from-primary to-indigo-600 flex items-center justify-center shadow-lg shadow-primary/20 ring-1 ring-white/20">
                         <Zap size={20} className="text-white fill-white" />
                     </div>
                     <div className="flex flex-col">
@@ -103,7 +103,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                         )}
                     >
                         {activeTab === 'assistant' ? (
-                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary to-purple-600 opacity-90" />
+                            <div className="absolute inset-0 rounded-2xl bg-linear-to-r from-primary to-purple-600 opacity-90" />
                         ) : (
                             <div className="absolute inset-0 rounded-2xl bg-white/5 group-hover:bg-white/10 transition-colors" />
                         )}
