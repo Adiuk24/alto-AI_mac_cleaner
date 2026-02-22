@@ -259,12 +259,15 @@ async fn scan_large_files_command() -> Result<ScanResult, String> {
 #[tauri::command]
 async fn scan_space_lens_command(path: Option<String>, depth: Option<u32>) -> Result<scanners::space_lens::FileNode, String> {
     let home = dirs::home_dir().ok_or("No home directory")?;
-    let mut allowed_roots = vec![home.clone()];
-    #[cfg(target_os = "macos")]
-    {
-        allowed_roots.push(PathBuf::from("/Applications"));
-        allowed_roots.push(PathBuf::from("/Library"));
-    }
+    let allowed_roots: Vec<PathBuf> = {
+        let mut v = vec![home.clone()];
+        #[cfg(target_os = "macos")]
+        {
+            v.push(PathBuf::from("/Applications"));
+            v.push(PathBuf::from("/Library"));
+        }
+        v
+    };
     let target_path = if let Some(p) = path {
         let p = p.trim();
         if p.is_empty() {
@@ -362,9 +365,9 @@ async fn uninstall_app_command(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn scan_leftovers_command(id: String) -> scanners::uninstaller::LeftoverGroups {
+async fn scan_leftovers_command(_id: String) -> scanners::uninstaller::LeftoverGroups {
     #[cfg(target_os = "macos")]
-    return scanners::uninstaller::scan_leftovers(&id);
+    return scanners::uninstaller::scan_leftovers(&_id);
     #[cfg(not(target_os = "macos"))]
     return scanners::uninstaller::LeftoverGroups::default();
 }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
+import { resolveResource } from '@tauri-apps/api/path';
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 
 interface AppInstallPayload {
@@ -20,11 +21,20 @@ export function NotificationManager() {
             }
 
             if (granted) {
-                // 2. Listen for app-installed events
+                // 2. Resolve Alto logo for notification icon (bundled resource)
+                let iconPath: string | undefined;
+                try {
+                    iconPath = await resolveResource('icons/icon.png');
+                } catch {
+                    // optional: use app default if resource not available
+                }
+
+                // 3. Listen for app-installed events
                 unlisten = await listen<AppInstallPayload>('app-installed', (event) => {
                     sendNotification({
                         title: 'New App Detected',
                         body: `Alto noticed you installed ${event.payload.name}. Analysis complete.`,
+                        ...(iconPath && { icon: iconPath }),
                     });
 
                     // Also dispatch internal event for AI to react

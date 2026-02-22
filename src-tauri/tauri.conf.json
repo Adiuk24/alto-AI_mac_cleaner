@@ -58,7 +58,7 @@
     },
     "shortDescription": "AI-powered system cleaner for macOS and Windows",
     "longDescription": "Scan and remove cache, logs, and junk; uninstall apps; find large files; malware scan; and more. Works on macOS and Windows.",
-    "resources": []
+    "resources": ["icons/icon.png"]
   },
   "plugins": {
     "shell": {

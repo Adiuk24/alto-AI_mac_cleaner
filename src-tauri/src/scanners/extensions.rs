@@ -46,7 +46,7 @@ pub fn scan_extensions() -> Vec<ExtensionItem> {
     // 1. Registry Run Keys (HKCU)
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     if let Ok(run) = hkcu.open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Run") {
-        for (name, value) in run.enum_values().map(|x| x.unwrap_or_default()) {
+        for (name, value) in run.enum_values().filter_map(|x| x.ok()) {
              items.push(ExtensionItem {
                  path: value.to_string(), // The command
                  name,
