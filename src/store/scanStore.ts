@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
-import type { ScanResult, AIInsight, SystemStats } from '../types';
+import type { ScanResult, AIInsight, SystemStats, MalwareResult } from '../types';
 import { analyzeScanResults } from '../utils/aiLogic';
 
 interface ScanState {
     junkResult: ScanResult | null;
     largeFilesResult: ScanResult | null;
+    malwareResult: MalwareResult | null;
 
     isScanningJunk: boolean;
     isScanningLargeFiles: boolean;
@@ -15,6 +16,7 @@ interface ScanState {
 
     startLargeFilesScan: () => void;
     finishLargeFilesScan: (result: ScanResult) => void;
+    setMalwareResult: (result: MalwareResult | null) => void;
 
     // Selection State
     selectedJunkItems: Set<string>;
@@ -39,6 +41,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
     // ... existing ...
     junkResult: null,
     largeFilesResult: null,
+    malwareResult: null,
     isScanningJunk: false,
     isScanningLargeFiles: false,
     selectedJunkItems: new Set(),
@@ -65,6 +68,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
 
     startLargeFilesScan: () => set({ isScanningLargeFiles: true }),
     finishLargeFilesScan: (result) => set({ largeFilesResult: result, isScanningLargeFiles: false }),
+    setMalwareResult: (result: MalwareResult | null) => set({ malwareResult: result }),
 
     toggleJunkItem: (path) => set((state) => {
         const next = new Set(state.selectedJunkItems);
@@ -106,6 +110,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
     reset: () => set({
         junkResult: null,
         largeFilesResult: null,
+        malwareResult: null,
         isScanningJunk: false,
         isScanningLargeFiles: false,
         selectedJunkItems: new Set(),

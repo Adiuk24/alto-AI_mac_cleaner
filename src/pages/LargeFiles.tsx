@@ -12,7 +12,7 @@ type DateFilter = 'All' | 'OneYear' | 'OneMonth' | 'OneWeek';
 
 export function LargeFiles() {
     const { largeFilesResult, isScanningLargeFiles, startLargeFilesScan, finishLargeFilesScan } = useScanStore();
-    const { call, loading } = useTauri(); // loading might be used later for buttons, but for now linter complains. Keeping it destructured but suppressing or validly ignoring?
+    const { call } = useTauri();
     // Actually loading IS used in the first scan button. But not in the second?
     // Wait, I see "disabled={loading}" in my previous code for the first scan button.
     // Linter said 'loading' is declared but never read at line 15.
@@ -31,10 +31,16 @@ export function LargeFiles() {
 
     const handleScan = async () => {
         startLargeFilesScan();
-        const result = await call<any>('scan_large_files_command');
-        if (result) {
-            finishLargeFilesScan(result);
-            playCompletionSound();
+        try {
+            const result = await call<any>('scan_large_files_command');
+            if (result?.items) {
+                finishLargeFilesScan(result);
+                playCompletionSound();
+            } else {
+                finishLargeFilesScan({ items: [], total_size_bytes: 0, errors: [] });
+            }
+        } catch {
+            finishLargeFilesScan({ items: [], total_size_bytes: 0, errors: [] });
         }
     };
 
@@ -44,6 +50,24 @@ export function LargeFiles() {
             await call('clean_items', { paths });
             handleScan();
             setSelectedItems(new Set());
+        }
+    };
+
+    const handleMove = async () => {
+        const paths = Array.from(selectedItems);
+        if (paths.length === 0) return;
+        const destination = window.prompt('Enter destination folder path (e.g. /Volumes/ExternalDrive/LargeFiles):');
+        if (!destination?.trim()) return;
+        try {
+            const result = await call<{ moved: number; errors: string[] }>('move_paths_command', { paths, destination: destination.trim() });
+            if (result && result.moved > 0) {
+                playCompletionSound();
+                setSelectedItems(new Set());
+                handleScan();
+            }
+            if (result?.errors?.length) window.alert(`Moved ${result.moved}. Errors: ${result.errors.join('; ')}`);
+        } catch (e) {
+            window.alert('Move failed: ' + (e instanceof Error ? e.message : e));
         }
     };
 
@@ -183,26 +207,38 @@ export function LargeFiles() {
     if (!largeFilesResult && !isScanningLargeFiles) {
         return (
             <div className="h-full flex flex-col items-center justify-center p-10 text-center relative overflow-hidden">
-                {/* Background Gradients */}
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-pink-500/10 rounded-full blur-[100px] pointer-events-none" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
+                {/* Background Decor */}
+                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-600/5 rounded-full blur-[100px] pointer-events-none" />
 
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center mb-8 shadow-2xl shadow-pink-500/30 z-10">
-                    <HardDrive className="w-16 h-16 text-white/90" strokeWidth={1.5} />
-                </div>
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="w-44 h-44 rounded-[3rem] glass-frost flex items-center justify-center mb-10 shadow-2xl border border-white/10 relative group"
+                >
+                    <div className="absolute inset-0 bg-primary/10 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    <HardDrive className="w-24 h-24 text-primary relative z-10" strokeWidth={1} />
+                </motion.div>
 
-                <h2 className="text-4xl font-bold mb-4 z-10 bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">Large & Old Files</h2>
-                <p className="text-white/50 mb-12 max-w-md leading-relaxed z-10 text-lg">
-                    Locate heavy files you haven't opened in months. Reclaim gigabytes of space instantly.
+                <h2 className="text-6xl font-black text-white mb-6 uppercase tracking-tighter shimmer-text">
+                    Large & Old Files
+                </h2>
+                <p className="text-xl text-white/40 mb-16 max-w-lg leading-relaxed font-medium">
+                    Uncover files that consume vast amounts of space and haven't been touched in months.
                 </p>
 
-                <button
-                    onClick={handleScan}
-                    disabled={loading}
-                    className="px-10 py-4 rounded-full bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 transition-all font-semibold text-white shadow-lg shadow-pink-900/40 z-10 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
                 >
-                    {loading ? 'Scanning...' : 'Review Large Files'}
-                </button>
+                    <button
+                        onClick={handleScan}
+                        className="btn-scan"
+                    >
+                        Check Files
+                    </button>
+                </motion.div>
             </div>
         );
     }
@@ -349,18 +385,15 @@ export function LargeFiles() {
             </div>
 
             {/* Main Content List */}
-            <div className="flex-1 flex flex-col min-w-0 bg-[#1e1135]/50">
-                <header className="px-8 py-5 border-b border-white/5 flex items-baseline justify-between shrink-0 bg-opacity-90 backdrop-blur-md sticky top-0 z-10">
+            <div className="flex-1 flex flex-col min-w-0 bg-transparent">
+                <header className="px-10 py-8 border-b border-white/5 flex items-baseline justify-between shrink-0 glass-frost z-10">
                     <div>
-                        <h1 className="text-2xl font-bold text-white mb-1">
+                        <h1 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter shimmer-text">
                             {activeFilter === 'All' ? 'All Files' : activeFilter}
                         </h1>
-                        <p className="text-sm text-white/50">
-                            Found {filteredItems.length} files · {formatBytes(filteredItems.reduce((acc, i) => acc + i.size_bytes, 0))} total
+                        <p className="text-sm font-bold text-white/30 uppercase tracking-[0.2em]">
+                            {filteredItems.length} items found &bull; {formatBytes(filteredItems.reduce((acc, i) => acc + i.size_bytes, 0))} Total
                         </p>
-                    </div>
-                    <div className="text-xs text-white/30">
-                        Sort by Size
                     </div>
                 </header>
 
@@ -427,6 +460,14 @@ export function LargeFiles() {
 
                     <div className="flex items-center gap-4">
                         <span className="text-lg font-bold text-white tabular-nums">{formatBytes(selectedSize)}</span>
+                        <button
+                            onClick={handleMove}
+                            disabled={selectedItems.size === 0}
+                            className="h-12 px-6 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium transition-all active:scale-95 flex items-center gap-2"
+                        >
+                            <ChevronRight size={18} />
+                            <span>Move to folder...</span>
+                        </button>
                         <button
                             onClick={handleClean}
                             disabled={selectedItems.size === 0}

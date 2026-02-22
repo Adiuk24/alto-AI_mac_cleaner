@@ -1,8 +1,8 @@
 import { useState } from 'react';
-// import { useTauri } from '../hooks/useTauri'; // Kept for future integration if needed, but commenting out to fix lint
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Zap, Power, Cpu, Search, ArrowLeft, Activity } from 'lucide-react';
+import { Settings, Zap, Power, Cpu, Search, ArrowLeft, Activity, ChevronRight, Sparkles } from 'lucide-react';
 import { playCompletionSound } from '../utils/sounds';
+import { cn } from '../utils/cn';
 
 // Mock data for the UI to match screenshot
 const CATEGORIES = [
@@ -41,6 +41,7 @@ export function Optimization() {
     const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
 
     const totalItems = Object.values(MOCK_ITEMS).reduce((acc, list) => acc + list.length, 0);
+    console.log('Total items for optimization:', totalItems);
 
     const toggleItem = (id: number) => {
         setCheckedItems(prev => ({ ...prev, [id]: !prev[id] }));
@@ -53,71 +54,80 @@ export function Optimization() {
     };
 
     return (
-        <div className="h-full w-full bg-[#1E1E2E] text-white overflow-hidden relative font-sans">
+        <div className="h-full w-full bg-transparent text-white overflow-hidden relative font-sans">
             <AnimatePresence mode="wait">
                 {viewState === 'landing' ? (
                     <motion.div
                         key="landing"
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95, x: -50 }}
-                        className="h-full flex items-center justify-center p-12"
+                        exit={{ opacity: 0, scale: 0.98, x: -50 }}
+                        className="h-full flex items-center justify-center p-12 relative z-10"
                     >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full max-w-5xl items-center">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-20 w-full max-w-5xl items-center">
                             {/* Left Content */}
-                            <div className="text-left space-y-8">
-                                <div>
-                                    <h1 className="text-4xl font-bold mb-4">Optimization</h1>
-                                    <p className="text-lg text-white/60 leading-relaxed">
-                                        Increase your Mac's output by staying in control of what's running on it.
+                            <div className="text-left space-y-10">
+                                <div className="space-y-4">
+                                    <h1 className="text-6xl font-black text-white uppercase tracking-tighter shimmer-text">Optimization</h1>
+                                    <p className="text-xl text-white/40 leading-relaxed max-w-md font-medium">
+                                        Surge your productivity by maintaining total control over your background ecosystem.
                                     </p>
                                 </div>
 
-                                <div className="space-y-6">
-                                    <div className="flex gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10">
-                                            <Settings className="text-pink-400" />
+                                <div className="space-y-8">
+                                    <div className="flex gap-6 group">
+                                        <div className="w-14 h-14 rounded-2xl glass-frost flex items-center justify-center shrink-0 border border-white/10 group-hover:shadow-primary/20 transition-all duration-500">
+                                            <Zap className="text-primary w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-white/90">Manage the launch agents of your apps</h3>
-                                            <p className="text-sm text-white/50">Stay in charge of the supporting applications on your Mac.</p>
+                                            <h3 className="font-bold text-white text-lg tracking-wide">Launch Management</h3>
+                                            <p className="text-sm text-white/40 mt-1 leading-relaxed">Stay in command of the silent agents that tether your performance.</p>
                                         </div>
                                     </div>
-                                    <div className="flex gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10">
-                                            <Activity className="text-purple-400" />
+                                    <div className="flex gap-6 group">
+                                        <div className="w-14 h-14 rounded-2xl glass-frost flex items-center justify-center shrink-0 border border-white/10 group-hover:shadow-purple-400/20 transition-all duration-500">
+                                            <Activity className="text-purple-400 w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-white/90">Take control of what you're running</h3>
-                                            <p className="text-sm text-white/50">Manage all of your login items to run only what you truly need.</p>
+                                            <h3 className="font-bold text-white text-lg tracking-wide">Consumer Insight</h3>
+                                            <p className="text-sm text-white/40 mt-1 leading-relaxed">Identify and neutralize high-memory hungriness instantly.</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={() => setViewState('detail')}
-                                    className="px-8 py-3 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white font-medium transition-colors shadow-lg shadow-blue-500/30"
+                                <motion.div
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ delay: 0.4 }}
                                 >
-                                    View All {totalItems} Items...
-                                </button>
+                                    <button
+                                        onClick={() => setViewState('detail')}
+                                        className="btn-scan"
+                                    >
+                                        Inspect
+                                    </button>
+                                </motion.div>
                             </div>
 
                             {/* Right Graphic */}
                             <div className="flex items-center justify-center">
-                                <div className="relative w-80 h-80 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-purple-500/30">
-                                    <div className="absolute inset-4 rounded-full border border-white/20" />
-                                    {/* Fader/Slider Graphic Simulation */}
-                                    <div className="flex gap-6 items-center justify-center">
-                                        {[0.7, 0.4, 0.8].map((val, i) => (
-                                            <div key={i} className="w-2 h-32 bg-white/20 rounded-full relative">
-                                                <motion.div
-                                                    className="absolute w-8 h-8 bg-white rounded-full shadow-lg left-1/2 -translate-x-1/2"
-                                                    initial={{ bottom: `${val * 100}%` }}
-                                                    animate={{ bottom: [`${val * 100}%`, `${(val + 0.1) * 100}%`, `${val * 100}%`] }}
-                                                    transition={{ duration: 3 + i, repeat: Infinity, ease: "easeInOut" }}
-                                                />
-                                            </div>
-                                        ))}
+                                <div className="relative w-80 h-80 flex items-center justify-center">
+                                    <div className="absolute inset-0 bg-primary/20 rounded-full blur-[80px] animate-pulse" />
+                                    <div className="relative w-72 h-72 rounded-[3.5rem] glass-frost border border-white/10 flex items-center justify-center shadow-2xl overflow-hidden group">
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                        {/* Slider Graphic Sim */}
+                                        <div className="flex gap-8 items-center justify-center relative z-10">
+                                            {[0.7, 0.4, 0.8].map((val, i) => (
+                                                <div key={i} className="w-2.5 h-40 bg-white/5 rounded-full relative">
+                                                    <motion.div
+                                                        className="absolute w-10 h-10 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.3)] left-1/2 -translate-x-1/2 ring-2 ring-white/20"
+                                                        initial={{ bottom: `${val * 100}%` }}
+                                                        animate={{ bottom: [`${val * 100}%`, `${(val + 0.1) * 100}%`, `${val * 100}%`] }}
+                                                        transition={{ duration: 3 + i, repeat: Infinity, ease: "easeInOut" }}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -132,23 +142,22 @@ export function Optimization() {
                         className="h-full flex flex-col"
                     >
                         {/* Header */}
-                        <div className="h-16 border-b border-white/10 flex items-center px-6 justify-between shrink-0 bg-[#1E1E2E]/50 backdrop-blur-md z-10">
+                        <div className="h-20 border-b border-white/5 flex items-center px-8 justify-between shrink-0 glass-frost z-10">
                             <button
                                 onClick={() => setViewState('landing')}
-                                className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+                                className="flex items-center gap-3 text-white/30 hover:text-white transition-all bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl"
                             >
                                 <ArrowLeft size={18} />
-                                <span className="text-sm font-medium">Back</span>
+                                <span className="text-xs font-bold uppercase tracking-widest">Back</span>
                             </button>
 
-                            <div className="flex items-center gap-4">
-                                <span className="text-sm text-white/40">Sort by Name ▾</span>
+                            <div className="flex items-center gap-6">
                                 <div className="relative">
-                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                                    <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
                                     <input
                                         type="text"
-                                        placeholder="Search"
-                                        className="bg-white/5 border border-white/10 rounded-full pl-9 pr-4 py-1.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50 w-48 transition-all"
+                                        placeholder="Filter utilities..."
+                                        className="bg-white/5 border border-white/10 rounded-full pl-10 pr-6 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-primary/50 w-56 transition-all focus:w-80"
                                     />
                                 </div>
                             </div>
@@ -156,59 +165,79 @@ export function Optimization() {
 
                         <div className="flex flex-1 overflow-hidden">
                             {/* Sidebar Categories */}
-                            <div className="w-64 border-r border-white/10 p-4 space-y-2 overflow-y-auto bg-[#181825]">
+                            <div className="w-80 border-r border-white/5 p-6 space-y-3 overflow-y-auto bg-black/10">
                                 {CATEGORIES.map(cat => (
                                     <button
                                         key={cat.id}
                                         onClick={() => setSelectedCategory(cat.id)}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${selectedCategory === cat.id
-                                            ? 'bg-white/10 text-white'
-                                            : 'text-white/50 hover:bg-white/5 hover:text-white/80'
-                                            }`}
+                                        className={cn(
+                                            "w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 relative group active:scale-[0.98]",
+                                            selectedCategory === cat.id
+                                                ? "glass-frost text-white shadow-xl"
+                                                : "text-white/40 hover:bg-white/5 hover:text-white/80"
+                                        )}
                                     >
-                                        <cat.icon size={18} />
-                                        <span className="flex-1 text-left text-sm font-medium">{cat.label}</span>
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500",
+                                            selectedCategory === cat.id ? "bg-primary/20 text-primary" : "bg-white/5 text-white/20 group-hover:text-white/40"
+                                        )}>
+                                            <cat.icon size={20} />
+                                        </div>
+                                        <span className="flex-1 text-left text-sm font-bold tracking-wide">{cat.label}</span>
                                         {cat.count > 0 && (
-                                            <span className="text-xs bg-white/10 px-1.5 py-0.5 rounded text-white/70">{cat.count}</span>
+                                            <span className="text-[10px] font-black bg-white/5 px-2 py-0.5 rounded-full text-white/30">{cat.count}</span>
+                                        )}
+                                        {selectedCategory === cat.id && (
+                                            <motion.div layoutId="cat-indicator" className="absolute left-0 top-3 bottom-3 w-1 bg-primary rounded-full" />
                                         )}
                                     </button>
                                 ))}
                             </div>
 
                             {/* Main List */}
-                            <div className="flex-1 flex flex-col bg-[#1E1E2E] overflow-hidden">
-                                <div className="p-8 pb-4">
-                                    <h2 className="text-2xl font-bold mb-2">{CATEGORIES.find(c => c.id === selectedCategory)?.label}</h2>
-                                    <p className="text-white/50 text-sm max-w-2xl">
-                                        Mostly, these are small satellite applications of other software products that you have. They broaden the functionality of the main product, but in some cases you may consider removing or disabling them.
+                            <div className="flex-1 flex flex-col bg-transparent overflow-hidden">
+                                <div className="p-10 pb-6">
+                                    <div className="flex items-center gap-4 mb-3">
+                                        <div className="w-1.5 h-8 bg-primary/40 rounded-full" />
+                                        <h2 className="text-3xl font-black text-white uppercase tracking-tighter">{CATEGORIES.find(c => c.id === selectedCategory)?.label}</h2>
+                                    </div>
+                                    <p className="text-lg text-white/40 font-medium max-w-3xl leading-relaxed">
+                                        These agents are auxiliary components that enable peripheral features. Disabling them can reclaim CPU cycles and sharpen your system responsiveness.
                                     </p>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto px-8 pb-20">
-                                    <div className="space-y-1">
+                                <div className="flex-1 overflow-y-auto px-10 pb-32 custom-scrollbar">
+                                    <div className="space-y-2">
                                         {MOCK_ITEMS[selectedCategory]?.map((item) => (
-                                            <div key={item.id} className="group flex items-center justify-between py-3 px-4 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
-                                                <div className="flex items-center gap-4">
-                                                    <button
-                                                        onClick={() => toggleItem(item.id)}
-                                                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${checkedItems[item.id]
-                                                            ? 'bg-blue-500 border-blue-500'
-                                                            : 'border-white/20 hover:border-white/40'
-                                                            }`}
-                                                    >
+                                            <div
+                                                key={item.id}
+                                                onClick={() => toggleItem(item.id)}
+                                                className="group flex items-center justify-between py-4 px-6 rounded-2xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-white/5 cursor-pointer active:scale-[0.99]"
+                                            >
+                                                <div className="flex items-center gap-5">
+                                                    <div className={cn(
+                                                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300",
+                                                        checkedItems[item.id] ? "bg-primary border-primary shadow-[0_0_10px_rgba(236,72,153,0.4)]" : "border-white/10 group-hover:border-white/30"
+                                                    )}>
                                                         {checkedItems[item.id] && <div className="w-2 h-2 bg-white rounded-full" />}
-                                                    </button>
-                                                    <div className="w-8 h-8 rounded-lg bg-gray-700/50 flex items-center justify-center text-lg">
+                                                    </div>
+                                                    <div className="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center text-2xl shadow-inner ring-1 ring-white/5 transform group-hover:scale-110 transition-transform duration-500">
                                                         {item.icon}
                                                     </div>
-                                                    <span className="text-sm font-medium text-white/90">{item.name}</span>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-base font-bold text-white tracking-wide">{item.name}</span>
+                                                        <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.1em] mt-0.5">Application Resident</span>
+                                                    </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-2 h-2 rounded-full ${item.status === 'Enabled' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-white/20'
-                                                        }`} />
-                                                    <span className={`text-sm ${item.status === 'Enabled' ? 'text-white/90' : 'text-white/40'
-                                                        }`}>{item.status}</span>
+                                                <div className="flex items-center gap-4">
+                                                    <div className={cn(
+                                                        "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-500",
+                                                        item.status === 'Enabled' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]" : "bg-white/5 text-white/20 border-white/5"
+                                                    )}>
+                                                        {item.status}
+                                                    </div>
+                                                    <ChevronRight size={18} className="text-white/5 group-hover:text-white/20 transition-colors" />
                                                 </div>
                                             </div>
                                         ))}
@@ -216,20 +245,21 @@ export function Optimization() {
                                 </div>
 
                                 {/* Floating Action Button */}
-                                <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
+                                <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
+                                    <button
                                         onClick={handlePerform}
-                                        className="px-8 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-md shadow-xl text-white font-medium flex items-center gap-2"
+                                        className="btn-scan px-12"
                                     >
-                                        <span>Perform</span>
-                                        {Object.keys(checkedItems).filter(k => checkedItems[Number(k)]).length > 0 && (
-                                            <span className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                                                {Object.keys(checkedItems).filter(k => checkedItems[Number(k)]).length}
-                                            </span>
-                                        )}
-                                    </motion.button>
+                                        <div className="flex items-center gap-4">
+                                            <Sparkles size={20} className="text-white" />
+                                            <span>Optimize</span>
+                                            {Object.keys(checkedItems).filter(k => checkedItems[Number(k)]).length > 0 && (
+                                                <span className="bg-white/20 text-white text-xs font-black px-2 py-0.5 rounded-full">
+                                                    {Object.keys(checkedItems).filter(k => checkedItems[Number(k)]).length}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </button>
                                 </div>
                             </div>
                         </div>

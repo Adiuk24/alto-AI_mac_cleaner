@@ -1,7 +1,7 @@
 [package]
 name = "alto"
-version = "0.1.0"
-description = "Alto: Premium AI Mac Cleaner"
+version = "2.1.5"
+description = "Alto: AI System Cleaner & Optimizer (macOS & Windows)"
 authors = ["Arif Adito"]
 edition = "2021"
 rust-version = "1.77"

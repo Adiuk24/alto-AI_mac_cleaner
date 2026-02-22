@@ -17,6 +17,7 @@ import { Settings } from './pages/Settings';
 import { TrashBins } from './pages/TrashBins';
 import { Privacy } from './pages/Privacy';
 import { Maintenance } from './pages/Maintenance';
+import { Help } from './pages/Help';
 import { useScanStore } from './store/scanStore';
 
 import { Onboarding } from './pages/Onboarding';
@@ -113,7 +114,7 @@ function App() {
       case 'system-junk':
         return <SystemJunk />;
       case 'uninstaller':
-        return <Uninstaller />;
+        return <Uninstaller onNavigate={setActiveTab} />;
       case 'updater':
         return <Updater />;
       case 'shredder':
@@ -138,6 +139,8 @@ function App() {
         return <Maintenance />;
       case 'settings':
         return <Settings />;
+      case 'help':
+        return <Help />;
       default:
         return <div className="p-10 text-center"><h2 className="text-2xl font-bold mb-2">Not Found</h2><p className="text-muted-foreground">Page not found.</p></div>;
     }

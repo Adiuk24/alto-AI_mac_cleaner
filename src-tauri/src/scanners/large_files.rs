@@ -2,8 +2,11 @@ use super::{ScanResult, ScannedItem};
 use walkdir::{WalkDir, DirEntry};
 use sysinfo::Disks;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 const MIN_SIZE_BYTES: u64 = 50 * 1024 * 1024; // 50 MB
+const MAX_FILES_TO_SCAN: usize = 50_000;      // Cap to avoid hanging on massive disks
+const SCAN_TIMEOUT_SECS: u64 = 30;           // Hard deadline
 
 // Lazy static for system info to reuse
 lazy_static::lazy_static! {
@@ -51,6 +54,8 @@ fn is_ignored(entry: &DirEntry) -> bool {
 pub fn scan_large_files(_home: &str) -> ScanResult {
     let mut items = Vec::new();
     let errors = Vec::new();
+    let mut total_files_checked = 0usize;
+    let deadline = Instant::now() + Duration::from_secs(SCAN_TIMEOUT_SECS);
     
     // Refresh disks
     let mut disks_lock = DISKS_REFRESH.lock().unwrap();
@@ -58,15 +63,22 @@ pub fn scan_large_files(_home: &str) -> ScanResult {
 
     let disks: Vec<_> = disks_lock.list().iter().map(|d| d.mount_point().to_owned()).collect();
 
-    for mount_point in disks {
+    'outer: for mount_point in disks {
         // Prepare walker
         let walker = WalkDir::new(&mount_point)
             .follow_links(false)
-            .same_file_system(true) // Don't cross into network drives or other partitions implicitly (we iterate them explicitly)
+            .same_file_system(true)
             .into_iter()
             .filter_entry(|e| !is_ignored(e));
 
         for entry in walker {
+            // Global safety checks
+            if Instant::now() >= deadline || total_files_checked >= MAX_FILES_TO_SCAN {
+                eprintln!("⚠️ Large files scan hit limit (time or file count). Returning partial results.");
+                break 'outer;
+            }
+            total_files_checked += 1;
+
             let entry = match entry {
                 Ok(e) => e,
                 Err(_) => continue,
@@ -93,7 +105,6 @@ pub fn scan_large_files(_home: &str) -> ScanResult {
                     _ => "Other",
                 };
 
-                // Get accessed date for filtering
                 let accessed_date = entry.metadata().ok()
                     .and_then(|m| m.accessed().ok())
                     .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())

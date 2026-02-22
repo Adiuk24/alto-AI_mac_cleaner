@@ -1,4 +1,9 @@
+# Build and release Alto for macOS (Intel + Apple Silicon) and Windows.
+# Trigger: push a tag v* (e.g. v2.1.5) or run manually via workflow_dispatch.
+# Ensure repo Settings → Actions → General → Workflow permissions: Read and write.
+
 name: Release
+
 on:
   push:
     tags:
@@ -12,43 +17,46 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, windows-latest]
+        include:
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+          - platform: windows-latest
+            args: ''
     runs-on: ${{ matrix.platform }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-20.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
-
-      - name: Rust setup
+      - name: Install Rust (stable + macOS targets)
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
 
-      - name: Sync node version and setup cache
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
           cache: 'npm'
 
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Build the app
+      - name: Build and release (Tauri)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "Alto v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
+          releaseName: 'Alto v__VERSION__'
+          releaseBody: 'Cross-platform release. Download the installer for your OS below.'
           releaseDraft: true
           prerelease: false
+          args: ${{ matrix.args }}

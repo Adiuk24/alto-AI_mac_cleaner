@@ -1,8 +1,24 @@
-import { LayoutDashboard, Trash2, Shield, Zap, Hammer, HardDrive, Files, Settings, Sparkles, RefreshCw, Puzzle, FileX, Mail, Eye } from 'lucide-react';
-import { cn } from '../utils/cn';
+import {
+    LayoutDashboard,
+    Trash2,
+    Shield,
+    Zap,
+    Hammer,
+    HardDrive,
+    Files,
+    Settings,
+    Sparkles,
+    RefreshCw,
+    Puzzle,
+    FileX,
+    Mail,
+    Eye,
+    HelpCircle
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useScanStore } from '../store/scanStore';
 import { formatBytes } from '../utils/formatBytes';
+import { cn } from '../utils/cn';
 
 interface SidebarProps {
     activeTab: string;
@@ -14,102 +30,93 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
     const menuCategories = [
         {
-            title: "Smart Scan",
-            items: [
-                { id: 'dashboard', label: 'Smart Scan', icon: LayoutDashboard },
-            ]
-        },
-        {
             title: "Cleanup",
             items: [
-                { id: 'system-junk', label: 'System Junk', icon: Trash2, badge: junkResult?.total_size_bytes },
-                { id: 'mail', label: 'Mail Attachments', icon: Mail },
-                { id: 'trash-bins', label: 'Trash Bins', icon: Trash2 },
+                { id: 'dashboard', label: 'Smart Scan', icon: LayoutDashboard, color: 'text-blue-400' },
+                { id: 'system-junk', label: 'System Junk', icon: Trash2, badge: junkResult?.total_size_bytes, color: 'text-blue-400' },
+                { id: 'mail', label: 'Mail Attachments', icon: Mail, color: 'text-blue-400' },
+                { id: 'trash-bins', label: 'Trash Bins', icon: Trash2, color: 'text-blue-400' },
             ]
         },
         {
             title: "Protection",
             items: [
-                { id: 'malware', label: 'Malware Removal', icon: Shield },
-                { id: 'privacy', label: 'Privacy', icon: Eye },
+                { id: 'malware', label: 'Malware Removal', icon: Shield, color: 'text-emerald-400' },
+                { id: 'privacy', label: 'Privacy', icon: Eye, color: 'text-emerald-400' },
             ]
         },
         {
-            title: "Speed",
+            title: "Performance",
             items: [
-                { id: 'optimization', label: 'Optimization', icon: Zap },
-                { id: 'maintenance', label: 'Maintenance', icon: Hammer },
+                { id: 'optimization', label: 'Optimization', icon: Zap, color: 'text-pink-400' },
+                { id: 'maintenance', label: 'Maintenance', icon: Hammer, color: 'text-pink-400' },
             ]
         },
         {
             title: "Applications",
             items: [
-                { id: 'uninstaller', label: 'Uninstaller', icon: Trash2 },
-                { id: 'updater', label: 'Updater', icon: RefreshCw },
-                { id: 'extensions', label: 'Extensions', icon: Puzzle },
+                { id: 'uninstaller', label: 'Uninstaller', icon: Trash2, color: 'text-orange-400' },
+                { id: 'updater', label: 'Updater', icon: RefreshCw, color: 'text-orange-400' },
+                { id: 'extensions', label: 'Extensions', icon: Puzzle, color: 'text-orange-400' },
             ]
         },
         {
             title: "Files",
             items: [
-                { id: 'space-lens', label: 'Space Lens', icon: HardDrive },
-                { id: 'large-files', label: 'Large & Old Files', icon: Files, badge: largeFilesResult?.total_size_bytes },
-                { id: 'shredder', label: 'Shredder', icon: FileX },
+                { id: 'space-lens', label: 'Space Lens', icon: HardDrive, color: 'text-purple-400' },
+                { id: 'large-files', label: 'Large & Old Files', icon: Files, badge: largeFilesResult?.total_size_bytes, color: 'text-purple-400' },
+                { id: 'shredder', label: 'Shredder', icon: FileX, color: 'text-purple-400' },
             ]
         }
     ];
 
     return (
         <motion.div
-            initial={{ x: -250, opacity: 0 }}
+            initial={{ x: -280, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="h-screen flex-shrink-0 z-50"
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="h-screen flex-shrink-0 z-50 p-4 pr-0"
         >
-            <div className="w-64 h-full flex flex-col glass text-white relative">
-                {/* Logo Area - Clean & Minimal */}
-                <div className="flex items-center gap-3 mb-8 px-6 pt-6">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg shadow-pink-500/20 ring-1 ring-white/20">
-                        <span className="text-sm font-bold text-white">A</span>
+            <div className="w-64 h-full flex flex-col glass-frost rounded-3xl text-white relative border border-white/10 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                {/* Logo Area */}
+                <div className="flex items-center gap-3 px-6 py-8">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-lg shadow-primary/20 ring-1 ring-white/20">
+                        <Zap size={20} className="text-white fill-white" />
                     </div>
-                    <h1 className="text-xl font-bold text-white tracking-tight opacity-90">
-                        Alto
-                    </h1>
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-black text-white tracking-widest uppercase italic">
+                            Alto
+                        </h1>
+                        <span className="text-[9px] font-mono text-white/30 tracking-[0.3em] uppercase -mt-1">Intelligent Agent</span>
+                    </div>
                 </div>
 
-                <nav className="flex-1 overflow-y-auto space-y-6 px-3">
-
+                <nav className="flex-1 overflow-y-auto space-y-8 px-4 custom-scrollbar pb-6">
                     {/* Primary AI Action */}
                     <button
                         onClick={() => onTabChange('assistant')}
                         className={cn(
-                            "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 text-sm font-bold relative group shadow-lg",
+                            "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 text-sm font-bold relative group overflow-hidden",
                             activeTab === 'assistant'
-                                ? "text-white bg-gradient-to-r from-pink-600 to-purple-600 border border-white/20 shadow-pink-500/20"
-                                : "text-white/90 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20"
+                                ? "text-white shadow-[0_0_20px_rgba(236,72,153,0.3)]"
+                                : "text-white/60 hover:text-white"
                         )}
                     >
-                        <div className={cn(
-                            "absolute inset-0 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 opacity-0 transition-opacity duration-300",
-                            activeTab === 'assistant' ? "opacity-0" : "group-hover:opacity-10"
-                        )} />
-
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center border border-white/10 group-hover:scale-110 transition-transform duration-300">
-                            <Sparkles size={16} className={activeTab === 'assistant' ? "text-white" : "text-pink-400"} />
-                        </div>
-                        <span className="tracking-wide">Chat with Alto</span>
-                        {activeTab === 'assistant' && (
-                            <motion.div
-                                layoutId="sidebar-glow"
-                                className="absolute inset-0 rounded-xl bg-white/20 blur-lg -z-10"
-                                transition={{ duration: 0.3 }}
-                            />
+                        {activeTab === 'assistant' ? (
+                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary to-purple-600 opacity-90" />
+                        ) : (
+                            <div className="absolute inset-0 rounded-2xl bg-white/5 group-hover:bg-white/10 transition-colors" />
                         )}
+
+                        <div className="relative z-10 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/10 shadow-inner">
+                            <Sparkles size={18} className={activeTab === 'assistant' ? "text-white" : "text-primary"} />
+                        </div>
+                        <span className="relative z-10 tracking-wide text-base">Ask Alto</span>
                     </button>
 
                     {menuCategories.map((category, idx) => (
-                        <div key={idx}>
-                            <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider px-3 mb-2">
+                        <div key={idx} className="space-y-2">
+                            <h3 className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] px-4">
                                 {category.title}
                             </h3>
                             <div className="space-y-1">
@@ -117,30 +124,32 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                                     const Icon = item.icon;
                                     const isActive = activeTab === item.id;
                                     const badge = (item as any).badge;
+                                    const itemColor = (item as any).color || 'text-white/60';
+
                                     return (
                                         <button
                                             key={item.id}
                                             onClick={() => onTabChange(item.id)}
                                             className={cn(
-                                                "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium relative group active:scale-95",
+                                                "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 text-[13.5px] font-semibold relative group active:scale-95",
                                                 isActive
-                                                    ? "text-white"
-                                                    : "text-white/60 hover:text-white hover:bg-white/5"
+                                                    ? "text-white bg-white/10 shadow-sm"
+                                                    : "text-white/50 hover:text-white"
                                             )}
                                         >
                                             {isActive && (
                                                 <motion.div
-                                                    layoutId="sidebar-active"
-                                                    className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent rounded-lg border-l-2 border-pink-500"
-                                                    initial={false}
-                                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                    layoutId="sidebar-active-indicator"
+                                                    className="absolute left-0 top-2 bottom-2 w-1.5 bg-primary rounded-full"
+                                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                                                 />
                                             )}
+
                                             <span className="relative z-10 flex items-center gap-3 flex-1 min-w-0">
-                                                <Icon size={18} className={cn(isActive ? "text-pink-400" : "opacity-70 group-hover:opacity-100 group-hover:text-pink-300 transition-colors")} />
-                                                <span className="truncate">{item.label}</span>
+                                                <Icon size={18} className={cn(isActive ? "text-white" : cn(itemColor, "opacity-50 group-hover:opacity-100 transition-all"))} />
+                                                <span className="truncate tracking-wide">{item.label}</span>
                                                 {badge != null && badge > 0 && (
-                                                    <span className="ml-auto text-[11px] font-mono text-white/40 shrink-0">
+                                                    <span className="ml-auto text-[9px] font-bold text-white/30 group-hover:text-white/50 transition-colors bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
                                                         {formatBytes(badge)}
                                                     </span>
                                                 )}
@@ -153,20 +162,30 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                     ))}
                 </nav>
 
-                <div className="mt-auto pt-4 border-t border-white/10 space-y-1">
+                <div className="px-4 py-6 border-t border-white/5 bg-black/20 space-y-1">
+                    <button
+                        type="button"
+                        onClick={() => onTabChange('help')}
+                        className={cn(
+                            "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
+                            activeTab === 'help' ? "text-white bg-white/10" : "text-white/40 hover:text-white hover:bg-white/5"
+                        )}
+                    >
+                        <HelpCircle size={18} />
+                        Help
+                    </button>
                     <button
                         onClick={() => onTabChange('settings')}
                         className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5",
-                            activeTab === 'settings' && "text-white bg-white/5"
+                            "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 text-sm font-bold text-white/30 hover:text-white hover:bg-white/5 group",
+                            activeTab === 'settings' && "text-white bg-white/10 shadow-none"
                         )}
                     >
-                        <Settings size={18} />
+                        <Settings size={20} className="group-hover:rotate-90 transition-transform duration-500" />
                         Settings
                     </button>
                 </div>
             </div>
         </motion.div>
-
     );
 }

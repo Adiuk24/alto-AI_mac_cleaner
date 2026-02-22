@@ -1,0 +1,19 @@
+{
+  "version": "2.1.5",
+  "notes": "Cross-platform release: Help & troubleshooting, Uninstaller polish, Large Files scan fix, in-app Help page.",
+  "pub_date": "2026-02-22T00:00:00Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "",
+      "url": "https://github.com/Adiuk24/alto-AI_mac_cleaner/releases/download/v2.1.5/Alto_aarch64.app.tar.gz"
+    },
+    "darwin-x86_64": {
+      "signature": "",
+      "url": "https://github.com/Adiuk24/alto-AI_mac_cleaner/releases/download/v2.1.5/Alto_x86_64.app.tar.gz"
+    },
+    "windows-x86_64": {
+      "signature": "",
+      "url": "https://github.com/Adiuk24/alto-AI_mac_cleaner/releases/download/v2.1.5/Alto_2.1.5_x64_en-US.msi"
+    }
+  }
+}

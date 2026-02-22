@@ -32,10 +32,16 @@ interface SystemEvent {
     path: string;
 }
 
+interface UserPrefs {
+    always_skip_patterns: string[];
+    auto_confirm_caches?: boolean;
+}
+
 interface ContextStore {
     last_scan_timestamp?: string;
     deletion_history: ContextRecord[];
     system_events: SystemEvent[];
+    user_preferences?: UserPrefs;
 }
 
 function SectionCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -116,6 +122,7 @@ export function Settings() {
     });
     const [clickCount, setClickCount] = useState(0);
     const [aiLogs, setAiLogs] = useState<string[]>([]);
+    const [newIgnorePattern, setNewIgnorePattern] = useState('');
 
     useEffect(() => {
         // Intercept console.log for AI logs
@@ -472,6 +479,63 @@ export function Settings() {
                                 </div>
                             </div>
                         )}
+
+                        {/* Ignore list — patterns to always skip in scans */}
+                        <div>
+                            <div className="flex items-center gap-2 mb-3">
+                                <FileText size={13} className="text-amber-400" />
+                                <span className="text-xs font-semibold text-white/60 uppercase tracking-wide">Ignore list</span>
+                            </div>
+                            <p className="text-xs text-white/40 mb-2">File or folder names (or patterns) to always skip during junk/large-file scans.</p>
+                            <div className="flex gap-2 mb-2">
+                                <input
+                                    value={newIgnorePattern}
+                                    onChange={e => setNewIgnorePattern(e.target.value)}
+                                    placeholder="e.g. my-important-folder"
+                                    className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-amber-500/50"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        const pat = newIgnorePattern.trim();
+                                        if (!pat) return;
+                                        const prefs: UserPrefs = {
+                                            always_skip_patterns: [...(contextStore?.user_preferences?.always_skip_patterns ?? []), pat],
+                                            auto_confirm_caches: contextStore?.user_preferences?.auto_confirm_caches ?? false
+                                        };
+                                        await invoke('update_user_preferences_command', { prefs });
+                                        setContextStore(prev => prev ? { ...prev, user_preferences: prefs } : null);
+                                        setNewIgnorePattern('');
+                                    }}
+                                    className="px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 text-sm font-medium hover:bg-amber-500/30"
+                                >
+                                    Add
+                                </button>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {(contextStore?.user_preferences?.always_skip_patterns ?? []).map((p, i) => (
+                                    <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[11px] font-mono text-white/70">
+                                        {p}
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                const list = contextStore?.user_preferences?.always_skip_patterns ?? [];
+                                                const next = list.filter((_, j) => j !== i);
+                                                const prefs: UserPrefs = {
+                                                    always_skip_patterns: next,
+                                                    auto_confirm_caches: contextStore?.user_preferences?.auto_confirm_caches ?? false
+                                                };
+                                                await invoke('update_user_preferences_command', { prefs });
+                                                setContextStore(prev => prev ? { ...prev, user_preferences: prefs } : null);
+                                            }}
+                                            className="text-white/40 hover:text-red-400"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
 
                         {/* Protected Paths */}
                         <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-4">

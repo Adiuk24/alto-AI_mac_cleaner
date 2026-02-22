@@ -19,6 +19,21 @@ pub struct AppInfo {
     pub icon_path: Option<String>,
     pub size_bytes: u64,
     pub last_used: Option<u64>,
+    /// "appstore" | "setapp" | "steam" | "blizzard" | "other"
+    pub store: Option<String>,
+    /// Vendor/organization derived from bundle id or plist
+    pub vendor: Option<String>,
+}
+
+/// Leftovers grouped by resource type for per-app breakdown (CMM-style).
+#[derive(Serialize, Clone, Debug, Default)]
+pub struct LeftoverGroups {
+    pub logs: Vec<String>,
+    pub preferences: Vec<String>,
+    pub caches: Vec<String>,
+    pub crashes: Vec<String>,
+    pub plugins: Vec<String>,
+    pub other: Vec<String>,
 }
 
 #[cfg(target_os = "macos")]
@@ -45,14 +60,18 @@ pub fn scan_apps() -> Vec<AppInfo> {
                             .sum();
 
                         let bundle_id = get_bundle_id(&path);
+                        let store = get_store(&path, &bundle_id, name);
+                        let vendor = get_vendor(&bundle_id);
 
                         apps.push(AppInfo {
                             name: name.to_string(),
                             path: path.to_string_lossy().to_string(),
-                            bundle_id,
+                            bundle_id: bundle_id.clone(),
                             icon_path: None,
                             size_bytes,
                             last_used: None,
+                            store,
+                            vendor,
                         });
                     }
                 }
@@ -79,16 +98,18 @@ pub fn scan_apps() -> Vec<AppInfo> {
                     if display_name.is_empty() { continue; }
 
                     let uninstall_string: String = app_key.get_value("UninstallString").unwrap_or_default();
-                    let install_location: String = app_key.get_value("InstallLocation").unwrap_or_default();
                     let display_icon: String = app_key.get_value("DisplayIcon").unwrap_or_default();
+                    let publisher: Option<String> = app_key.get_value("Publisher").ok();
 
                     apps.push(AppInfo {
                         name: display_name,
-                        path: uninstall_string, // Use uninstall string as "path" for action
-                        bundle_id: Some(name), // Use Registry Key Name as ID
+                        path: uninstall_string,
+                        bundle_id: Some(name),
                         icon_path: if display_icon.is_empty() { None } else { Some(display_icon) },
-                        size_bytes: 0, // Hard to get accurate size from registry
+                        size_bytes: 0,
                         last_used: None,
+                        store: Some("other".to_string()),
+                        vendor: publisher,
                     });
                 }
             }
@@ -103,19 +124,70 @@ fn get_bundle_id(app_path: &Path) -> Option<String> {
     let plist_path = app_path.join("Contents/Info.plist");
     let file = std::fs::File::open(plist_path).ok()?;
     let value: serde_json::Value = plist::from_reader(file).ok()?;
-    
     value.get("CFBundleIdentifier")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string())
 }
 
 #[cfg(target_os = "macos")]
-pub fn scan_leftovers(bundle_id: &str) -> Vec<PathBuf> {
-    let mut leftovers = Vec::new();
+fn get_store(app_path: &Path, bundle_id: &Option<String>, name: &str) -> Option<String> {
+    let bid = bundle_id.as_deref().unwrap_or("");
+    let name_lower = name.to_lowercase();
+    if app_path.join("Contents/_MASReceipt/receipt").exists() {
+        return Some("appstore".to_string());
+    }
+    if bid.contains("setapp") || name_lower.contains("setapp") {
+        return Some("setapp".to_string());
+    }
+    if bid.contains("steam") || name_lower.contains("steam") {
+        return Some("steam".to_string());
+    }
+    if bid.contains("blizzard") || name_lower.contains("blizzard") || name_lower.contains("battle.net") {
+        return Some("blizzard".to_string());
+    }
+    Some("other".to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn get_vendor(bundle_id: &Option<String>) -> Option<String> {
+    let bid = bundle_id.as_deref()?;
+    let parts: Vec<&str> = bid.split('.').collect();
+    if parts.len() >= 2 {
+        let v = parts[1];
+        if !v.is_empty() {
+            let mut c = v.chars();
+            let capitalized = c.next().map(|c| c.to_uppercase().collect::<String>()).unwrap_or_default() + c.as_str();
+            return Some(capitalized);
+        }
+    }
+    Some("Other".to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn categorize_leftover(path: &Path) -> &'static str {
+    let path_str = path.to_string_lossy();
+    if path_str.contains("Logs") || path_str.contains("DiagnosticReports") {
+        "logs"
+    } else if path_str.contains("Preferences") {
+        "preferences"
+    } else if path_str.contains("Caches") || path_str.contains("Cache") {
+        "caches"
+    } else if path_str.contains("Crash") || path_str.contains("Crashes") {
+        "crashes"
+    } else if path_str.contains("PlugIns") || path_str.contains("Plugins") {
+        "plugins"
+    } else {
+        "other"
+    }
+}
+
+#[cfg(target_os = "macos")]
+pub fn scan_leftovers(bundle_id: &str) -> LeftoverGroups {
+    let mut groups = LeftoverGroups::default();
     let home = dirs::home_dir().unwrap();
     let library = home.join("Library");
+    let mut raw: Vec<PathBuf> = Vec::new();
 
-    // 1. Standard Heuristic Scan (Regex-like)
     let search_paths = vec![
         library.join("Application Support"),
         library.join("Caches"),
@@ -125,40 +197,33 @@ pub fn scan_leftovers(bundle_id: &str) -> Vec<PathBuf> {
         library.join("Containers"),
     ];
 
-    for base in search_paths {
-        if let Ok(entries) = std::fs::read_dir(&base) {
+    for base in &search_paths {
+        if let Ok(entries) = std::fs::read_dir(base) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
                     if name.to_lowercase().contains(&bundle_id.to_lowercase()) {
-                        leftovers.push(path);
+                        raw.push(path);
                     }
                 }
             }
         }
     }
 
-    // 2. Database Rules Scan (app_rules.json)
-    // We include the JSON at compile time for simplicity/performance
     const RULES_JSON: &str = include_str!("../data/app_rules.json");
     if let Ok(rules) = serde_json::from_str::<serde_json::Value>(RULES_JSON) {
         if let Some(app_rule) = rules.get(bundle_id) {
             if let Some(paths) = app_rule.get("paths").and_then(|p| p.as_array()) {
                 for rule_path_val in paths {
                     if let Some(rule_path_str) = rule_path_val.as_str() {
-                        // Expand ~ to home dir
                         let expanded = if rule_path_str.starts_with("~") {
                             rule_path_str.replace("~", &home.to_string_lossy())
                         } else {
                             rule_path_str.to_string()
                         };
-                        
                         let path = PathBuf::from(expanded);
-                        if path.exists() {
-                             // Avoid duplicates
-                             if !leftovers.contains(&path) {
-                                 leftovers.push(path);
-                             }
+                        if path.exists() && !raw.iter().any(|p| p == &path) {
+                            raw.push(path);
                         }
                     }
                 }
@@ -166,22 +231,38 @@ pub fn scan_leftovers(bundle_id: &str) -> Vec<PathBuf> {
         }
     }
 
-    leftovers
+    for path in raw {
+        let s = path.to_string_lossy().to_string();
+        match categorize_leftover(&path) {
+            "logs" => groups.logs.push(s),
+            "preferences" => groups.preferences.push(s),
+            "caches" => groups.caches.push(s),
+            "crashes" => groups.crashes.push(s),
+            "plugins" => groups.plugins.push(s),
+            _ => groups.other.push(s),
+        }
+    }
+
+    groups
 }
 
 #[cfg(target_os = "macos")]
 pub async fn uninstall_app(path: &str) -> Result<(), String> {
     let app_path = Path::new(path);
     
-    // 1. Identify Leftovers BEFORE deleting the app (we need the Info.plist)
     let bundle_id = get_bundle_id(app_path);
-    let leftovers = if let Some(bid) = &bundle_id {
+    let groups = if let Some(bid) = &bundle_id {
         scan_leftovers(bid)
     } else {
-        Vec::new()
+        LeftoverGroups::default()
     };
-
-    println!("Uninstalling {}. Found {} leftovers.", path, leftovers.len());
+    let all_leftovers: Vec<String> = groups.logs.iter().chain(groups.preferences.iter())
+        .chain(groups.caches.iter()).chain(groups.crashes.iter())
+        .chain(groups.plugins.iter()).chain(groups.other.iter())
+        .cloned()
+        .collect();
+    let n = all_leftovers.len();
+    println!("Uninstalling {}. Found {} leftovers.", path, n);
 
     // 2. Try Standard Trash (User Mode)
     if trash::delete(path).is_err() {
@@ -197,13 +278,10 @@ pub async fn uninstall_app(path: &str) -> Result<(), String> {
         }
     }
 
-    // 4. Delete Leftovers
-    for leftover in leftovers {
-        let l_path = leftover.to_string_lossy().to_string();
-        if trash::delete(&leftover).is_err() {
-             // If user can't delete leftover, ask helper
-             let cmd = Command::DeletePath { path: l_path };
-             let _ = helper_client::send_command(cmd).await;
+    for l_path in &all_leftovers {
+        if trash::delete(l_path).is_err() {
+            let cmd = Command::DeletePath { path: l_path.clone() };
+            let _ = helper_client::send_command(cmd).await;
         }
     }
 

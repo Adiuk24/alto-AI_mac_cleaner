@@ -11,30 +11,41 @@ interface AppInfo {
     size_bytes: number;
     bundle_id?: string;
     icon_path?: string;
+    store?: string;
+    vendor?: string;
+    last_used?: number;
 }
 
-const CATEGORIES = [
-    { id: 'all', name: 'All Applications', icon: AppWindow, count: 0 },
-    { id: 'unused', name: 'Unused', icon: Clock, count: 0 },
-    { id: 'leftovers', name: 'Leftovers', icon: Layers, count: 0 },
-    { id: 'suspicious', name: 'Suspicious', icon: AlertTriangle, count: 0 },
-];
+interface LeftoverGroups {
+    logs: string[];
+    preferences: string[];
+    caches: string[];
+    crashes: string[];
+    plugins: string[];
+    other: string[];
+}
 
-const STORES = [
-    { id: 'appstore', name: 'App Store', count: 0 },
-    { id: 'other', name: 'Other', count: 0 },
-];
+const CATEGORY_IDS = ['all', 'unused', 'leftovers', 'suspicious'] as const;
+const CATEGORY_NAMES: Record<string, string> = {
+    all: 'All Applications',
+    unused: 'Unused',
+    leftovers: 'Leftovers',
+    suspicious: 'Suspicious',
+};
+const CATEGORY_ICONS = { all: AppWindow, unused: Clock, leftovers: Layers, suspicious: AlertTriangle };
 
-const VENDORS = [
-    { name: 'Apple', count: 3 },
-    { name: 'Microsoft', count: 10 },
-    { name: 'Adobe', count: 2 },
-    { name: 'Google', count: 2 },
-    { name: 'MacPaw', count: 5 },
-    { name: 'Other', count: 24 },
-];
+const STORE_IDS = ['appstore', 'setapp', 'steam', 'blizzard', 'other'] as const;
+const STORE_NAMES: Record<string, string> = { appstore: 'App Store', setapp: 'Setapp', steam: 'Steam', blizzard: 'Blizzard', other: 'Other' };
 
-export function Uninstaller() {
+function leftoverCount(g: LeftoverGroups): number {
+    return g.logs.length + g.preferences.length + g.caches.length + g.crashes.length + g.plugins.length + g.other.length;
+}
+
+interface UninstallerProps {
+    onNavigate?: (tab: string) => void;
+}
+
+export function Uninstaller({ onNavigate }: UninstallerProps) {
     const [apps, setApps] = useState<AppInfo[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -42,37 +53,17 @@ export function Uninstaller() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [activeCategory, setActiveCategory] = useState('all');
     const [sortBy, setSortBy] = useState<'name' | 'size'>('size');
-    const [leftovers, setLeftovers] = useState<Record<string, string[]>>({});
+    const [leftovers, setLeftovers] = useState<Record<string, LeftoverGroups>>({});
     const [expandedApps, setExpandedApps] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         const loadApps = async () => {
             try {
-                // Mock initial data if backend is empty for visualization
-                // const data = await invoke<AppInfo[]>('scan_apps_command');
-                // For layout dev, use mock data if backend fails or returns empty
-                let data: AppInfo[] = [];
-                try {
-                    data = await invoke<AppInfo[]>('scan_apps_command');
-                } catch (e) {
-                    console.warn("Backend scan failed, using mock", e);
-                }
-
-                if (data.length === 0) {
-                    // Fallback mock data for visualization
-                    data = [
-                        { name: 'CleanMyMac X', path: '/Applications/CleanMyMac X.app', size_bytes: 295400000, bundle_id: 'com.macpaw.CleanMyMac4' },
-                        { name: 'Antigravity', path: '/Applications/Antigravity.app', size_bytes: 994000000, bundle_id: 'com.antigravity.app' },
-                        { name: 'Alto', path: '/Applications/Alto.app', size_bytes: 24500000, bundle_id: 'com.alto.app' },
-                        { name: 'Discord', path: '/Applications/Discord.app', size_bytes: 450000000, bundle_id: 'com.hnc.Discord' },
-                        { name: 'Slack', path: '/Applications/Slack.app', size_bytes: 380000000, bundle_id: 'com.tinyspeck.slackmacgap' },
-                        { name: 'Visual Studio Code', path: '/Applications/Visual Studio Code.app', size_bytes: 520000000, bundle_id: 'com.microsoft.VSCode' },
-                    ];
-                }
-
-                setApps(data);
+                const data = await invoke<AppInfo[]>('scan_apps_command');
+                setApps(data ?? []);
             } catch (e) {
                 console.error("Failed to load apps", e);
+                setApps([]);
             } finally {
                 setLoading(false);
             }
@@ -89,8 +80,8 @@ export function Uninstaller() {
             newExpanded.add(app.path);
             if (!leftovers[app.path] && app.bundle_id) {
                 try {
-                    const paths = await invoke<string[]>('scan_leftovers_command', { id: app.bundle_id });
-                    setLeftovers(prev => ({ ...prev, [app.path]: paths }));
+                    const groups = await invoke<LeftoverGroups>('scan_leftovers_command', { id: app.bundle_id });
+                    setLeftovers(prev => ({ ...prev, [app.path]: groups }));
                 } catch (e) {
                     console.error("Failed to scan leftovers", e);
                 }
@@ -99,23 +90,44 @@ export function Uninstaller() {
         setExpandedApps(newExpanded);
     };
 
-    // Filter Logic
+    const storesWithCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        apps.forEach(app => {
+            const s = app.store || 'other';
+            counts[s] = (counts[s] || 0) + 1;
+        });
+        return STORE_IDS.filter(id => (counts[id] ?? 0) > 0).map(id => ({ id, name: STORE_NAMES[id] || id, count: counts[id] ?? 0 }));
+    }, [apps]);
+
+    const vendorsWithCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        apps.forEach(app => {
+            const v = app.vendor || 'Other';
+            counts[v] = (counts[v] || 0) + 1;
+        });
+        return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
+    }, [apps]);
+
+    const categoryCounts = useMemo(() => {
+        const all = apps.length;
+        const withLeftovers = apps.filter(app => leftovers[app.path] && leftoverCount(leftovers[app.path]) > 0).length;
+        const unused = apps.filter(app => app.last_used != null && app.last_used > 0 && (Date.now() / 1000 - app.last_used) > 90 * 24 * 3600).length;
+        return { all, unused: unused || 0, leftovers: withLeftovers, suspicious: 0 };
+    }, [apps, leftovers]);
+
     const filteredApps = useMemo(() => {
         let result = apps;
 
-        // Search
         if (search) {
             result = result.filter(app => app.name.toLowerCase().includes(search.toLowerCase()));
         }
 
-        // Category Filter (Mock logic for now, except 'all')
         if (activeCategory === 'unused') {
-            result = result.filter((_, i) => i % 5 === 0);
+            result = result.filter(app => app.last_used != null && (Date.now() / 1000 - app.last_used) > 90 * 24 * 3600);
         } else if (activeCategory === 'leftovers') {
-            result = [];
+            result = result.filter(app => leftovers[app.path] && leftoverCount(leftovers[app.path]) > 0);
         }
 
-        // Sort
         return result.sort((a, b) => {
             if (sortBy === 'size') return b.size_bytes - a.size_bytes;
             return a.name.localeCompare(b.name);
@@ -180,11 +192,15 @@ export function Uninstaller() {
             {/* Header */}
             <div className="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-white/5 backdrop-blur-xl shrink-0 z-20">
                 <div className="flex items-center gap-4">
-                    <button className="text-white/70 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium">
+                    <button
+                        type="button"
+                        onClick={() => onNavigate?.('dashboard')}
+                        className="text-white/70 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium"
+                    >
                         <ArrowLeft size={18} /> <span className="hidden sm:inline">Back</span>
                     </button>
                     <div className="h-4 w-px bg-white/10" />
-                    <div className="text-white/90 font-medium text-sm"> Uninstaller </div>
+                    <div className="text-white/90 font-medium text-sm">Uninstaller</div>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -201,55 +217,54 @@ export function Uninstaller() {
                 </div>
             </div>
 
-            <div className="flex flex-1 overflow-hidden z-10">
-                {/* Sidebar */}
-                <div className="w-64 bg-black/20 border-r border-white/5 flex flex-col backdrop-blur-md overflow-y-auto">
+            <div className="flex flex-1 overflow-hidden z-10 min-w-0">
+                {/* Sidebar - fixed width so it doesn't collapse */}
+                <div className="w-64 min-w-[12rem] shrink-0 bg-black/20 border-r border-white/5 flex flex-col backdrop-blur-md overflow-y-auto">
                     <div className="p-4 space-y-6">
                         {/* Categories */}
                         <div>
-                            {CATEGORIES.map(cat => {
-                                const Icon = cat.icon;
-                                const isActive = activeCategory === cat.id;
+                            {CATEGORY_IDS.map(id => {
+                                const Icon = CATEGORY_ICONS[id];
+                                const isActive = activeCategory === id;
+                                const count = categoryCounts[id];
                                 return (
                                     <button
-                                        key={cat.id}
-                                        onClick={() => setActiveCategory(cat.id)}
-                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all mb-1 group relative ${isActive
-                                            ? 'text-white font-medium bg-gradient-to-r from-cyan-500/20 to-blue-500/10 border border-white/10 shadow-lg shadow-cyan-900/20'
-                                            : 'text-white/60 hover:bg-white/5 hover:text-white/90'
+                                        key={id}
+                                        type="button"
+                                        onClick={() => setActiveCategory(id)}
+                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all mb-1 group relative ${isActive
+                                            ? 'text-white font-medium bg-white/10 border border-white/10 shadow-sm'
+                                            : 'text-white/60 hover:bg-white/5 hover:text-white/90 border border-transparent'
                                             }`}
                                     >
                                         <div className="flex items-center gap-3 relative z-10">
                                             <Icon size={16} className={isActive ? "text-cyan-300" : "text-white/40 group-hover:text-white/60"} />
-                                            <span>{cat.name}</span>
+                                            <span>{CATEGORY_NAMES[id]}</span>
                                         </div>
-                                        <span className={`text-xs ${isActive ? "text-cyan-200" : "opacity-30 group-hover:opacity-50"}`}>
-                                            {cat.id === 'all' ? apps.length : cat.count}
+                                        <span className={`text-xs tabular-nums ${isActive ? "text-cyan-200" : "text-white/40 group-hover:text-white/60"}`}>
+                                            {count}
                                         </span>
-                                        {isActive && <motion.div layoutId="active-cat-bg" className="absolute inset-0 rounded-lg bg-white/5" />}
                                     </button>
                                 );
                             })}
                         </div>
 
-                        {/* Stores (Mock) */}
                         <div>
                             <h3 className="text-[10px] font-bold text-white/30 uppercase tracking-wider mb-3 px-3">Stores</h3>
-                            {STORES.map(store => (
+                            {storesWithCounts.map(store => (
                                 <button
                                     key={store.id}
                                     className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-white/50 hover:bg-white/5 hover:text-white/80 transition-all mb-1"
                                 >
                                     <span>{store.name}</span>
-                                    <span className="opacity-30">{store.count || (store.id === 'other' ? apps.length : 0)}</span>
+                                    <span className="opacity-30">{store.count}</span>
                                 </button>
                             ))}
                         </div>
 
-                        {/* Vendors (Mock) */}
                         <div>
                             <h3 className="text-[10px] font-bold text-white/30 uppercase tracking-wider mb-3 px-3">Vendors</h3>
-                            {VENDORS.map(v => (
+                            {vendorsWithCounts.slice(0, 8).map(v => (
                                 <button
                                     key={v.name}
                                     className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-white/50 hover:bg-white/5 hover:text-white/80 transition-all mb-1"
@@ -269,7 +284,7 @@ export function Uninstaller() {
                         <div className="flex items-end justify-between mb-2">
                             <div>
                                 <h1 className="text-3xl font-light text-white mb-2 tracking-tight">
-                                    {CATEGORIES.find(c => c.id === activeCategory)?.name}
+                                    {CATEGORY_NAMES[activeCategory] ?? 'Applications'}
                                 </h1>
                                 <p className="text-white/50 text-sm max-w-xl">
                                     {activeCategory === 'all'
@@ -308,9 +323,25 @@ export function Uninstaller() {
                                 <span className="text-white/30 text-xs uppercase tracking-widest">Scanning Apps...</span>
                             </div>
                         ) : filteredApps.length === 0 ? (
-                            <div className="text-center py-20">
+                            <div className="text-center py-20 px-4">
                                 <Package size={48} className="mx-auto text-white/10 mb-4" />
-                                <div className="text-white/30 text-sm">No applications found here.</div>
+                                <div className="text-white/70 text-sm font-medium">No applications found</div>
+                                <p className="text-white/40 text-xs mt-2 max-w-sm mx-auto">
+                                    Grant Full Disk Access in System Settings so Alto can list applications from /Applications and your user Applications folder.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        try {
+                                            await invoke('open_full_disk_access_settings_command');
+                                        } catch (e) {
+                                            console.error(e);
+                                        }
+                                    }}
+                                    className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white/90 text-sm font-medium transition-colors"
+                                >
+                                    Open System Settings → Privacy & Security
+                                </button>
                             </div>
                         ) : (
                             <div className="space-y-1">
@@ -352,30 +383,48 @@ export function Uninstaller() {
                                                 </div>
                                                 <div className="text-xs text-white/30 truncate flex items-center gap-2">
                                                     <span>{app.bundle_id?.split('.')[1] || 'App'}</span>
-                                                    {leftovers[app.path] && (
+                                                    {leftovers[app.path] && leftoverCount(leftovers[app.path]) > 0 && (
                                                         <span className="bg-cyan-500/10 text-cyan-300 px-1.5 rounded text-[10px] font-medium border border-cyan-500/20">
-                                                            +{leftovers[app.path].length} items
+                                                            +{leftoverCount(leftovers[app.path])} items
                                                         </span>
                                                     )}
                                                 </div>
 
-                                                {/* Expanded Details */}
+                                                {/* Expanded Details: per-app resource groups */}
                                                 <AnimatePresence>
-                                                    {expandedApps.has(app.path) && leftovers[app.path] && (
-                                                        <motion.div
-                                                            initial={{ height: 0, opacity: 0 }}
-                                                            animate={{ height: "auto", opacity: 1 }}
-                                                            exit={{ height: 0, opacity: 0 }}
-                                                            className="overflow-hidden mt-2 space-y-1"
-                                                        >
-                                                            {leftovers[app.path].map((leftover, i) => (
-                                                                <div key={i} className="flex items-center gap-2 text-[10px] text-white/40 pl-2 border-l border-white/10">
-                                                                    <Layers size={10} />
-                                                                    <span className="truncate">{leftover.split('/').pop()}</span>
-                                                                </div>
-                                                            ))}
-                                                        </motion.div>
-                                                    )}
+                                                    {expandedApps.has(app.path) && leftovers[app.path] && (() => {
+                                                        const g = leftovers[app.path];
+                                                        const sections = [
+                                                            { label: 'Logs', paths: g.logs },
+                                                            { label: 'Preferences', paths: g.preferences },
+                                                            { label: 'Caches', paths: g.caches },
+                                                            { label: 'Crashes', paths: g.crashes },
+                                                            { label: 'Plugins', paths: g.plugins },
+                                                            { label: 'Other', paths: g.other },
+                                                        ].filter(s => s.paths.length > 0);
+                                                        if (sections.length === 0) return null;
+                                                        return (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: "auto", opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                className="overflow-hidden mt-2 space-y-2"
+                                                            >
+                                                                {sections.map(({ label, paths }) => (
+                                                                    <div key={label}>
+                                                                        <div className="text-[10px] font-semibold text-white/50 uppercase tracking-wider mb-1">{label}</div>
+                                                                        {paths.slice(0, 5).map((p, i) => (
+                                                                            <div key={i} className="flex items-center gap-2 text-[10px] text-white/40 pl-2 border-l border-white/10">
+                                                                                <Layers size={10} />
+                                                                                <span className="truncate">{p.split('/').pop() || p}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                        {paths.length > 5 && <div className="text-[10px] text-white/30 pl-2">+{paths.length - 5} more</div>}
+                                                                    </div>
+                                                                ))}
+                                                            </motion.div>
+                                                        );
+                                                    })()}
                                                 </AnimatePresence>
                                             </div>
 

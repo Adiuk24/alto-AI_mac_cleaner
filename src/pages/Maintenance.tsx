@@ -6,14 +6,20 @@ import {
     Globe,
     Search,
     ShieldCheck,
-    CheckCircle2,
     Loader2,
     Type,
-    AlertTriangle,
-    Terminal
+    Terminal,
+    ChevronRight,
+    Zap
 } from 'lucide-react';
 import { playCompletionSound } from '../utils/sounds';
 import { AnimatePresence, motion } from 'framer-motion';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+}
 
 interface MaintenanceTask {
     id: string;
@@ -102,8 +108,8 @@ export function Maintenance() {
 
             <div className="flex flex-1 overflow-hidden z-10 px-8 pb-8 gap-12">
                 {/* Left Panel: Task List */}
-                <div className="w-[420px] flex flex-col pt-4 overflow-y-auto">
-                    <div className="space-y-1">
+                <div className="w-[420px] flex flex-col pt-6 overflow-y-auto custom-scrollbar">
+                    <div className="space-y-3">
                         {tasks.map(task => {
                             const isSelected = selectedTaskId === task.id;
                             const log = taskLogs[task.id];
@@ -115,40 +121,43 @@ export function Maintenance() {
                                 <button
                                     key={task.id}
                                     onClick={() => setSelectedTaskId(task.id)}
-                                    className={`group w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-left relative overflow-hidden ${isSelected
-                                        ? 'bg-white/10 shadow-lg backdrop-blur-md'
-                                        : 'hover:bg-white/5'
-                                        }`}
+                                    className={cn(
+                                        "group w-full flex items-center gap-5 px-5 py-4 rounded-2xl transition-all duration-300 text-left relative overflow-hidden active:scale-[0.98]",
+                                        isSelected
+                                            ? "glass-frost border-white/20 bg-white/10 shadow-2xl"
+                                            : "hover:bg-white/5 border border-transparent"
+                                    )}
                                 >
                                     {/* Status Indicator */}
-                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${isSelected
-                                        ? 'border-white bg-white/20'
-                                        : isError
-                                            ? 'border-red-400 bg-red-400/20'
-                                            : isDone
-                                                ? 'border-emerald-400 bg-emerald-400/20'
-                                                : 'border-white/30 group-hover:border-white/50'
-                                        }`}>
-                                        {isError && <AlertTriangle size={12} className="text-red-400" />}
-                                        {isDone && !isError && <CheckCircle2 size={12} className="text-emerald-400" />}
-                                        {isSelected && !isDone && !isError && <div className="w-2 h-2 rounded-full bg-white" />}
-                                    </div>
+                                    <div className={cn(
+                                        "w-2 h-2 rounded-full transition-all duration-500",
+                                        isError ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" :
+                                            isDone ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" :
+                                                isSelected ? "bg-primary animate-pulse shadow-[0_0_10px_rgba(236,72,153,0.5)]" : "bg-white/20"
+                                    )} />
 
                                     {/* Icon Box */}
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-blue-500 shadow-md' : 'bg-white/10'
-                                        }`}>
-                                        <Icon size={20} className="text-white" />
+                                    <div className={cn(
+                                        "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500",
+                                        isSelected ? "bg-primary/20 ring-1 ring-primary/40" : "bg-white/5"
+                                    )}>
+                                        <Icon size={22} className={isSelected ? "text-primary" : "text-white/40 group-hover:text-white/60"} />
                                     </div>
 
                                     {/* Label */}
-                                    <div className="flex flex-col">
-                                        <span className={`font-medium text-[15px] ${isSelected ? 'text-white' : 'text-white/80'}`}>
+                                    <div className="flex flex-col flex-1">
+                                        <span className={cn(
+                                            "font-bold text-[15px] tracking-wide transition-colors",
+                                            isSelected ? "text-white" : "text-white/50 group-hover:text-white/80"
+                                        )}>
                                             {task.name}
                                         </span>
                                         {task.requires_sudo && (
-                                            <span className="text-[10px] text-white/40 uppercase tracking-wider">Requires Admin</span>
+                                            <span className="text-[9px] text-primary/60 font-black uppercase tracking-[0.2em] mt-0.5">Admin Rights</span>
                                         )}
                                     </div>
+
+                                    {isSelected && <ChevronRight size={18} className="text-white/20" />}
                                 </button>
                             );
                         })}
@@ -156,57 +165,67 @@ export function Maintenance() {
                 </div>
 
                 {/* Right Panel: Details & Output */}
-                <div className="flex-1 flex flex-col pt-8 pr-12 relative">
+                <div className="flex-1 flex flex-col pt-12 relative pr-4">
                     <AnimatePresence mode="wait">
                         {selectedTask && (
                             <motion.div
                                 key={selectedTask.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                                 className="flex-1 flex flex-col"
                             >
-                                <h1 className="text-4xl font-bold mb-6 text-white">{selectedTask.name}</h1>
-                                <p className="text-lg text-white/70 leading-relaxed mb-8 max-w-xl">
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="w-1.5 h-10 bg-primary/40 rounded-full" />
+                                    <h1 className="text-5xl font-black text-white uppercase tracking-tighter shimmer-text">{selectedTask.name}</h1>
+                                </div>
+                                <p className="text-xl text-white/40 leading-relaxed mb-12 max-w-2xl font-medium">
                                     {selectedTask.description}
                                 </p>
 
                                 {/* Terminal Output Box */}
-                                <div className="flex-1 w-full bg-black/40 rounded-lg border border-white/10 p-4 font-mono text-sm overflow-hidden flex flex-col max-h-[300px]">
-                                    <div className="flex items-center gap-2 text-white/30 mb-2 border-b border-white/5 pb-2">
-                                        <Terminal size={14} />
-                                        <span>Output Log</span>
+                                <div className="flex-1 w-full glass-frost rounded-[2rem] border border-white/10 p-8 font-mono text-xs overflow-hidden flex flex-col shadow-2xl relative group">
+                                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+
+                                    <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
+                                        <div className="flex items-center gap-3 text-white/40">
+                                            <Terminal size={14} className="text-primary" />
+                                            <span className="uppercase tracking-[0.2em] font-black">Process Terminal</span>
+                                        </div>
+                                        <div className="flex gap-1.5">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-white/5" />
+                                            <div className="w-2.5 h-2.5 rounded-full bg-white/5" />
+                                            <div className="w-2.5 h-2.5 rounded-full bg-white/5" />
+                                        </div>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto whitespace-pre-wrap text-white/80">
-                                        {taskLogs[selectedTask.id]?.output || <span className="text-white/30 italic">Ready to run...</span>}
+
+                                    <div className="flex-1 overflow-y-auto whitespace-pre-wrap text-white/60 custom-scrollbar leading-relaxed">
+                                        {taskLogs[selectedTask.id]?.output || <span className="text-white/20 italic uppercase tracking-widest text-[10px]">Ready for sequence...</span>}
                                     </div>
                                 </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
 
-                    {/* Floating Action Button */}
-                    <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-2">
+                    {/* Action Button Area */}
+                    <div className="mt-12 flex justify-center pb-2">
                         <button
                             onClick={runTask}
                             disabled={runningTask !== null}
-                            className={`
-                                group relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300
-                                ${runningTask
-                                    ? 'bg-white/5 cursor-wait'
-                                    : 'bg-white/10 hover:bg-white/20 active:scale-95 cursor-pointer shadow-2xl shadow-purple-900/50 hover:shadow-purple-700/50'
-                                }
-                            `}
+                            className="btn-scan"
                         >
-                            <div className="absolute inset-0 rounded-full border-[6px] border-[#3E2348] opacity-80" />
-                            <div className="absolute inset-2 rounded-full bg-gradient-to-br from-white/10 to-transparent border border-white/10 flex items-center justify-center backdrop-blur-sm">
-                                {runningTask ? (
-                                    <Loader2 size={32} className="text-white/60 animate-spin" />
-                                ) : (
-                                    <span className="text-lg font-medium text-white/80 group-hover:text-white transition-colors">Run</span>
-                                )}
-                            </div>
+                            {runningTask ? (
+                                <div className="flex items-center gap-3">
+                                    <Loader2 size={24} className="animate-spin" />
+                                    <span>Running</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-3">
+                                    <Zap size={22} className="fill-white" />
+                                    <span>Run</span>
+                                </div>
+                            )}
                         </button>
                     </div>
                 </div>

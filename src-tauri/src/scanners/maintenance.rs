@@ -47,27 +47,64 @@ pub fn get_tasks() -> Vec<MaintenanceTask> {
             command: "atsutil databases -remove".to_string(),
             requires_sudo: true,
         },
+        MaintenanceTask {
+            id: "rebuild_launch_services".to_string(),
+            name: "Rebuild Launch Services".to_string(),
+            description: "Rebuilds the Launch Services database so apps open correctly.".to_string(),
+            command: "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user".to_string(),
+            requires_sudo: false,
+        },
     ]
 }
 
-pub fn run_task(id: &str) -> Result<String, String> {
-    let tasks = get_tasks();
-    let task = tasks.iter().find(|t| t.id == id).ok_or("Task not found")?;
+#[cfg(target_os = "macos")]
+fn run_task_impl(task: &MaintenanceTask) -> Result<String, String> {
+    if task.requires_sudo {
+        // Use AppleScript to show GUI password prompt for sudo
+        let script = format!(
+            "do shell script \"{}\" with administrator privileges",
+            task.command.replace('"', "\\\"").replace('\\', "\\\\")
+        );
+        let output = Command::new("osascript")
+            .arg("-e")
+            .arg(&script)
+            .output()
+            .map_err(|e| e.to_string())?;
+        if output.status.success() {
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        } else {
+            Err(String::from_utf8_lossy(&output.stderr).to_string())
+        }
+    } else {
+        let output = Command::new("sh")
+            .arg("-c")
+            .arg(&task.command)
+            .output()
+            .map_err(|e| e.to_string())?;
+        if output.status.success() {
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        } else {
+            Err(String::from_utf8_lossy(&output.stderr).to_string())
+        }
+    }
+}
 
-    // In a real app, 'sudo' commands need a UI prompt or Helper. 
-    // For now, we'll try to execute directly, but this will fail if sudo requires a password.
-    // Ideally, this should route through our Privileged Helper (com.macpaw.CleanMyMac4.Agent equivalent). 
-    
-    // Naively executing sh -c for now
+#[cfg(not(target_os = "macos"))]
+fn run_task_impl(task: &MaintenanceTask) -> Result<String, String> {
     let output = Command::new("sh")
         .arg("-c")
         .arg(&task.command)
         .output()
         .map_err(|e| e.to_string())?;
-
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
     } else {
         Err(String::from_utf8_lossy(&output.stderr).to_string())
     }
+}
+
+pub fn run_task(id: &str) -> Result<String, String> {
+    let tasks = get_tasks();
+    let task = tasks.iter().find(|t| t.id == id).ok_or("Task not found")?;
+    run_task_impl(task)
 }

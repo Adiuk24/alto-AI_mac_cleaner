@@ -169,3 +169,55 @@ fn extract_app_owner(path: &str) -> Option<String> {
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{index_file, FileCategory};
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn system_critical_blocked() {
+        let r = index_file("/System/Library/CoreServices/foo");
+        assert!(!r.is_safe_to_delete);
+        assert_eq!(r.category, FileCategory::SystemCritical);
+
+        let r2 = index_file("/usr/bin/bash");
+        assert!(!r2.is_safe_to_delete);
+        assert_eq!(r2.category, FileCategory::SystemCritical);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn user_data_blocked() {
+        let r = index_file("/Users/jane/Documents/secret.pdf");
+        assert!(!r.is_safe_to_delete);
+        assert_eq!(r.category, FileCategory::UserData);
+
+        let r2 = index_file("/Users/jane/Desktop/file.txt");
+        assert!(!r2.is_safe_to_delete);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn cache_safe() {
+        let r = index_file("/Users/jane/Library/Caches/com.example.app/cache.dat");
+        assert!(r.is_safe_to_delete);
+        assert_eq!(r.category, FileCategory::Cache);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn logs_safe() {
+        let r = index_file("/Users/jane/Library/Logs/SomeApp/out.log");
+        assert!(r.is_safe_to_delete);
+        assert_eq!(r.category, FileCategory::Log);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn tmp_safe() {
+        let r = index_file("/tmp/foo.tmp");
+        assert!(r.is_safe_to_delete);
+        assert_eq!(r.category, FileCategory::Temp);
+    }
+}

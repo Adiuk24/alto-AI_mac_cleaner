@@ -1,0 +1,10 @@
+{
+  "identifier": "menu-capability",
+  "description": "Menu window permissions (tray popup)",
+  "windows": ["menu"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:app:default"
+  ]
+}

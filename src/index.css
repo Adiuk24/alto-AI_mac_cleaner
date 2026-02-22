@@ -1,142 +1,210 @@
 @import "tailwindcss";
-@config "../tailwind.config.js";
 
 @layer base {
   :root {
-    --background: 260 30% 98%;
-    --foreground: 260 10% 10%;
+    /* Premium Color Palette (CleanMyMac Inspired) */
+    --background: 260 35% 6%;
+    --foreground: 260 10% 98%;
 
-    --card: 260 25% 98%;
-    --card-foreground: 260 10% 15%;
+    --card: 260 30% 12%;
+    --card-foreground: 260 10% 95%;
 
-    --popover: 260 25% 98%;
-    --popover-foreground: 260 10% 15%;
+    --popover: 260 30% 10%;
+    --popover-foreground: 260 10% 98%;
 
-    --primary: 330 80% 60%;
+    --primary: 320 85% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 260 20% 96%;
-    --secondary-foreground: 260 10% 20%;
+    --secondary: 260 25% 15%;
+    --secondary-foreground: 260 10% 95%;
 
-    --muted: 260 10% 94%;
-    --muted-foreground: 260 5% 45%;
+    --muted: 260 20% 12%;
+    --muted-foreground: 260 10% 65%;
 
-    --accent: 260 20% 96%;
-    --accent-foreground: 260 10% 15%;
+    --accent: 260 30% 20%;
+    --accent-foreground: 260 10% 98%;
 
     --destructive: 0 85% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 260 15% 92%;
-    --input: 260 15% 92%;
-    --ring: 330 80% 60%;
+    --border: 260 20% 15%;
+    --input: 260 20% 15%;
+    --ring: 320 85% 60%;
 
-    --radius: 1rem;
+    --radius: 1.25rem;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
+    outline: none;
   }
 
   body {
-    @apply text-white antialiased;
+    color: white;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
     font-feature-settings: "rlig" 1, "calt" 1;
-
-    /* 
-      FORCE DARK BACKGROUND
-    */
-    background-color: #0f172a;
-    background-image:
-      radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.4), transparent 40%),
-      radial-gradient(circle at 85% 30%, rgba(219, 39, 119, 0.2), transparent 40%),
-      linear-gradient(125deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%);
-
-    background-attachment: fixed;
-    background-size: cover;
+    background-color: #0c0b14;
     min-height: 100vh;
+  }
+
+  ::selection {
+    background-color: hsla(var(--primary) / 0.3);
+  }
+
+  /* Ambient Background Animation */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(circle at 15% 15%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 85% 15%, rgba(236, 72, 153, 0.1) 0%, transparent 40%),
+      radial-gradient(circle at 50% 85%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
+      #0c0b14;
+    filter: blur(100px);
+    animation: ambient-drift 20s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes ambient-drift {
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+
+  100% {
+    transform: scale(1.1) translate(20px, 10px);
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-white/5 backdrop-blur-2xl border-r border-white/5 shadow-2xl;
+    background-color: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(40px);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Soft Frosted Glass */
+  .glass-frost {
+    background-color: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(64px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Vibrant Glowing Glass */
+  .glass-glow {
+    background-color: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.1);
   }
 
   .glass-card {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl transition-all duration-300;
+    background-color: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(64px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border-radius: 1.25rem;
+    transition: all 0.3s ease;
   }
 
   .glass-card:hover {
-    @apply bg-white/10 border-white/20 shadow-2xl transform scale-[1.01];
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    transform: translateY(-4px);
   }
 
   .glass-button {
-    @apply bg-white/5 hover:bg-white/10 active:bg-white/5 border border-white/10 rounded-lg transition-all duration-200 backdrop-blur-lg;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(16px);
   }
 
-  .btn-scan {
-    @apply relative rounded-full w-32 h-32 flex items-center justify-center text-white font-bold text-xl tracking-wide shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden;
+  .glass-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
 
+  .glass-button:active {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+
+  /* The Iconic Smart Scan Button */
+  .btn-scan {
+    position: relative;
+    border-radius: 9999px;
+    width: 8rem;
+    height: 8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.025em;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    transition: all 0.5s ease;
+    cursor: pointer;
+    overflow: hidden;
     background: radial-gradient(circle at 30% 30%, #f472b6, #db2777);
     box-shadow:
-      0 10px 30px -10px rgba(219, 39, 119, 0.6),
-      inset 0 2px 4px rgba(255, 255, 255, 0.4),
-      inset 0 -4px 6px rgba(0, 0, 0, 0.2);
+      0 0 40px rgba(219, 39, 119, 0.4),
+      inset 0 2px 10px rgba(255, 255, 255, 0.4);
   }
 
-  .btn-scan::after {
+  .btn-scan::before {
     content: '';
     position: absolute;
-    inset: 0;
-    border-radius: 9999px;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-    pointer-events: none;
+    inset: -50%;
+    background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.3), transparent 60%);
+    animation: rotate-conic 4s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .btn-scan:hover::before {
+    opacity: 1;
   }
 
   .btn-scan:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow:
-      0 20px 40px -10px rgba(219, 39, 119, 0.8),
-      inset 0 2px 4px rgba(255, 255, 255, 0.5),
-      inset 0 -4px 6px rgba(0, 0, 0, 0.2);
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 0 60px rgba(219, 39, 119, 0.6), inset 0 2px 15px rgba(255, 255, 255, 0.5);
   }
 
   .btn-scan:active {
-    transform: translateY(1px) scale(0.98);
-    background: radial-gradient(circle at 30% 30%, #ec4899, #be185d);
+    transform: translateY(0) scale(0.95);
   }
 
-  .shimmer {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .shimmer::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
-    transform: skewX(-20deg) translateX(-150%);
-    transition: transform 0.5s;
-    pointer-events: none;
-  }
-
-  .shimmer:hover::before {
-    animation: shimmer-anim 1.5s infinite;
-  }
-
-  @keyframes shimmer-anim {
-    0% {
-      transform: skewX(-20deg) translateX(-150%);
+  @keyframes rotate-conic {
+    from {
+      transform: rotate(0deg);
     }
 
-    100% {
-      transform: skewX(-20deg) translateX(150%);
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .shimmer-text {
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    background-image: linear-gradient(to right, white, rgba(255, 255, 255, 0.5), white);
+    background-size: 200% auto;
+    animation: shimmer 3s linear infinite;
+  }
+
+  @keyframes shimmer {
+    to {
+      background-position: 200% center;
     }
   }
 }

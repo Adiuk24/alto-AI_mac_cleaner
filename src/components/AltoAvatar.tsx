@@ -1,76 +1,104 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AltoAvatarProps {
     size?: number;
     className?: string;
     isThinking?: boolean;
-    isTyping?: boolean; // New prop for user interaction
+    isTyping?: boolean;
 }
 
 export function AltoAvatar({ size = 40, className = "", isThinking = false, isTyping = false }: AltoAvatarProps) {
-    // Dynamic Speed: 
-    // - Idle: Slow (8s)
-    // - Thinking: Fast (2s)
-    // - Typing: Excited (4s)
-    const ringSpeed = isThinking ? 2 : (isTyping ? 4 : 8);
-    const coreScale = isThinking ? [1, 1.2, 1] : (isTyping ? [1, 1.05, 1] : 1);
-    const coreOpacity = isThinking ? 1 : (isTyping ? 0.9 : 0.8);
+    const ringSpeed = isThinking ? 3 : (isTyping ? 5 : 10);
 
     return (
         <div
             className={`relative flex items-center justify-center ${className}`}
             style={{ width: size, height: size }}
         >
-            {/* Outer Glow - Reacts to Typing */}
+            {/* Soft Ambient Radiance */}
             <motion.div
-                className="absolute inset-0 bg-purple-500/30 rounded-full blur-md"
+                className="absolute inset-[-20%] rounded-full bg-primary/20 blur-2xl"
                 animate={{
-                    opacity: isTyping ? 0.6 : 0.3,
-                    scale: isTyping ? 1.2 : 1
+                    opacity: [0.2, 0.4, 0.2],
+                    scale: [0.8, 1.1, 0.8]
                 }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             />
 
-            {/* Rotating Outer Ring */}
+            {/* Main Outer Ring */}
             <motion.div
-                className="absolute inset-0 rounded-full border-[2px] border-t-purple-400 border-r-transparent border-b-indigo-400 border-l-transparent"
+                className="absolute inset-0 rounded-full border-[1.5px] border-white/20"
                 animate={{ rotate: 360 }}
+                transition={{ duration: ringSpeed * 2, repeat: Infinity, ease: "linear" }}
+            >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_#ec4899]" />
+            </motion.div>
+
+            {/* Inner Glowing Ring */}
+            <motion.div
+                className="absolute inset-[10%] rounded-full border-[1.5px] border-t-transparent border-r-indigo-400 border-b-transparent border-l-purple-500 opacity-60"
+                animate={{ rotate: -360 }}
                 transition={{ duration: ringSpeed, repeat: Infinity, ease: "linear" }}
             />
 
-            {/* Counter-Rotating Inner Ring */}
+            {/* Core Orb */}
             <motion.div
-                className="absolute inset-[15%] rounded-full border-[2px] border-t-transparent border-r-cyan-400 border-b-transparent border-l-blue-500 opacity-80"
-                animate={{ rotate: -360 }}
-                transition={{ duration: ringSpeed * 1.5, repeat: Infinity, ease: "linear" }}
-            />
-
-            {/* Core - The "Soul" */}
-            <motion.div
-                className="absolute inset-[30%] bg-gradient-to-br from-indigo-100 to-white rounded-full shadow-[0_0_15px_rgba(139,92,246,0.6)]"
+                className="absolute inset-[25%] rounded-full z-10"
+                initial={false}
                 animate={{
-                    scale: coreScale,
-                    opacity: coreOpacity
+                    scale: isThinking ? [1, 1.15, 1] : (isTyping ? [1, 1.05, 1] : [1, 1.02, 1]),
+                    backgroundColor: isThinking ? "rgba(139, 92, 246, 0.9)" : "rgba(255, 255, 255, 0.95)"
                 }}
                 transition={{
-                    duration: isThinking ? 1.5 : (isTyping ? 0.5 : 0),
-                    repeat: (isThinking || isTyping) ? Infinity : 0,
+                    duration: isThinking ? 1.5 : (isTyping ? 0.6 : 3),
+                    repeat: Infinity,
                     ease: "easeInOut"
                 }}
-            />
+                style={{
+                    boxShadow: isThinking
+                        ? "0 0 30px rgba(139, 92, 246, 0.8), inset 0 2px 10px rgba(255,255,255,0.8)"
+                        : "0 0 20px rgba(255, 255, 255, 0.4), inset 0 2px 5px rgba(255,255,255,1)",
+                    background: "radial-gradient(circle at 30% 30%, white, rgba(236, 252, 255, 0.8))"
+                }}
+            >
+                {/* Iris / Pupil */}
+                <motion.div
+                    className="absolute inset-[35%] bg-indigo-950 rounded-full opacity-80 overflow-hidden"
+                >
+                    <motion.div
+                        className="absolute inset-0 bg-indigo-500/40"
+                        animate={{
+                            x: isThinking ? [-2, 2, -2] : 0,
+                            y: isThinking ? [1, -1, 1] : 0
+                        }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                    />
+                </motion.div>
+            </motion.div>
 
-            {/* Interactive Iris - follows "thought" process */}
-            <motion.div
-                className="absolute w-[10%] h-[10%] bg-indigo-600 rounded-full"
-                animate={{
-                    x: isThinking ? [0, 2, -2, 0] : 0,
-                    y: isThinking ? [0, -1, 1, 0] : 0
-                }}
-                transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatType: "reverse"
-                }}
-            />
+            {/* Particles (Thinking State Only) */}
+            <AnimatePresence>
+                {isThinking && [...Array(4)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        className="absolute w-1 h-1 bg-primary rounded-full"
+                        initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                        animate={{
+                            opacity: [0, 1, 0],
+                            scale: [0, 1, 0],
+                            x: (i % 2 === 0 ? 1 : -1) * (20 + Math.random() * 20),
+                            y: (i < 2 ? 1 : -1) * (20 + Math.random() * 20),
+                        }}
+                        exit={{ opacity: 0 }}
+                        transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            delay: i * 0.3,
+                            ease: "easeOut"
+                        }}
+                    />
+                ))}
+            </AnimatePresence>
         </div>
     );
 }

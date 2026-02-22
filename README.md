@@ -10,7 +10,7 @@
 
 </div>
 
-**Alto** is a professional, high-performance system cleaning and optimization tool built with **Tauri**, **React**, and **Rust**. The **v2.1.0 "Agentic Edition"** introduces a revolutionary AI-first approach to system maintenance, combining a premium UI with deep system awareness via **Model Context Protocol (MCP)**.
+**Alto** is the **AI-based pro cleaner** — a professional, high-performance system cleaning and optimization tool built with **Tauri**, **React**, and **Rust**. The **v2.1.0 "Agentic Edition"** delivers an AI-first approach to system maintenance: the assistant explains what’s safe to remove, suggests actions, and runs real scans. Deep system awareness is enforced via **Model Context Protocol (MCP)** so the AI never touches system or user data without your confirmation.
 
 ---
 
@@ -25,8 +25,9 @@ Explore our comprehensive documentation to learn more about Alto:
 
 ## 🚀 Key Features (v2.1.0 "Agentic Edition")
 
-*   **🧠 Agentic AI Assistant**: A truly proactive assistant that monitors your Mac/PC in real-time. It doesn't just chat; it executes real tasks and reports actual results.
-*   **🛡️ MCP Safety Layer**: Implements a strict Model Context Protocol safety gate. Every deletion is indexed and categorized before being presented for your two-step confirmation.
+*   **🧠 AI-based pro cleaner**: Ask in plain language — "What's using my disk?", "Clean my Mac", "Find old videos." The assistant runs real scans, explains results, and suggests safe cleanup.
+*   **🤖 Agentic AI Assistant**: Proactive monitoring and task execution. It doesn't just chat; it runs junk, malware, and large-file scans and reports actual results.
+*   **🛡️ MCP Safety Layer**: Every deletion is indexed and categorized (cache, log, system, user data). System and user data are never deleted; you get a two-step confirmation for safe items only.
 *   **🔔 Live System Monitoring**: Background watcher notifies you proactively when apps are installed or suspicious files are downloaded.
 *   **🧹 System Junk**: Deep scan and removal of cache, logs, and temporary files (Cross-platform support).
 *   **⚡ Speed Optimization**: Intelligent DNS flushing and RAM freeing.

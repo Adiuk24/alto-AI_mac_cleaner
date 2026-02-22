@@ -1,4 +1,4 @@
-import { Trash2, CheckCircle, ArrowLeft, Search, Layers, Sparkles } from 'lucide-react';
+import { Trash2, CheckCircle, ArrowLeft, Search, Layers, Sparkles, ChevronRight } from 'lucide-react';
 import { useScanStore } from '../store/scanStore';
 import { useTauri } from '../hooks/useTauri';
 import { useState, useMemo } from 'react';
@@ -24,7 +24,7 @@ export function SystemJunk() {
         toggleJunkItem,
         setAllJunkItems
     } = useScanStore();
-    const { call, loading } = useTauri();
+    const { call } = useTauri();
     const [cleaning, setCleaning] = useState(false);
     const [viewState, setViewState] = useState<ViewState>(junkResult ? 'summary' : 'pre-scan');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -99,37 +99,39 @@ export function SystemJunk() {
                 {viewState === 'pre-scan' && (
                     <motion.div
                         key="pre-scan"
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
                         className="h-full flex items-center justify-center p-12 relative z-10"
                     >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 w-full max-w-5xl items-center">
-                            <div className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-20 w-full max-w-5xl items-center">
+                            <div className="space-y-10">
                                 <div>
-                                    <h1 className="text-4xl font-bold text-white mb-4">System Junk</h1>
-                                    <p className="text-lg text-white/50 leading-relaxed">
-                                        Clean your system to achieve maximum performance and reclaim free space.
+                                    <h1 className="text-5xl font-black text-white mb-6 uppercase tracking-tighter shimmer-text">
+                                        System Junk
+                                    </h1>
+                                    <p className="text-lg text-white/40 leading-relaxed max-w-md">
+                                        Reclaim lost space and optimize your system by removing internal clutter that slows you down.
                                     </p>
                                 </div>
 
-                                <div className="space-y-6">
-                                    <div className="flex gap-5">
-                                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10 shadow-lg shadow-pink-500/10 backdrop-blur-sm">
-                                            <Sparkles className="text-pink-400" />
+                                <div className="space-y-8">
+                                    <div className="flex gap-6 group">
+                                        <div className="w-14 h-14 rounded-2xl glass-frost flex items-center justify-center shrink-0 border border-white/10 shadow-lg group-hover:shadow-primary/20 transition-all duration-500">
+                                            <Sparkles className="text-primary w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-white/90 text-lg">Optimizes your system</h3>
-                                            <p className="text-sm text-white/50 mt-1">Removes temporary files to free up space and smoothen your Mac's performance.</p>
+                                            <h3 className="font-bold text-white text-lg tracking-wide">Optimization Glow Up</h3>
+                                            <p className="text-sm text-white/40 mt-1 leading-relaxed">Removes cached files and temporary assets to breathe new life into your Mac.</p>
                                         </div>
                                     </div>
-                                    <div className="flex gap-5">
-                                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10 shadow-lg shadow-pink-500/10 backdrop-blur-sm">
-                                            <Layers className="text-purple-400" />
+                                    <div className="flex gap-6 group">
+                                        <div className="w-14 h-14 rounded-2xl glass-frost flex items-center justify-center shrink-0 border border-white/10 shadow-lg group-hover:shadow-purple-400/20 transition-all duration-500">
+                                            <Layers className="text-purple-400 w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-white/90 text-lg">Resolves all kinds of errors</h3>
-                                            <p className="text-sm text-white/50 mt-1">Gets rid of various broken items that may result in wrong application behavior.</p>
+                                            <h3 className="font-bold text-white text-lg tracking-wide">Error Resolution</h3>
+                                            <p className="text-sm text-white/40 mt-1 leading-relaxed">Purges broken logs and corrupted items that trigger unexpected behavior.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -138,24 +140,27 @@ export function SystemJunk() {
                             {/* Right Graphic & CTA */}
                             <div className="flex flex-col items-center justify-center relative">
                                 <div className="relative w-80 h-80 flex items-center justify-center">
-                                    {/* Large Glowing Circle Background */}
-                                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-pink-500 to-rose-600 blur-3xl opacity-20 animate-pulse" />
-                                    <div className="relative w-72 h-72 rounded-full glass-card flex items-center justify-center border border-white/10 shadow-2xl">
-                                        {/* Inner aesthetic graphic - abstract scanner icon */}
-                                        <Trash2 className="w-32 h-32 text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.5)]" strokeWidth={1} />
+                                    {/* Ambient Background Glow */}
+                                    <div className="absolute inset-0 rounded-full bg-primary/20 blur-[80px] animate-pulse" />
+                                    <div className="relative w-72 h-72 rounded-[3rem] glass-frost flex items-center justify-center border border-white/10 shadow-2xl overflow-hidden group">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                        <Trash2 className="w-32 h-32 text-primary drop-shadow-[0_0_20px_rgba(236,72,153,0.4)]" strokeWidth={1} />
                                     </div>
                                 </div>
 
-                                <motion.button
-                                    onClick={handleScan}
-                                    disabled={loading}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="absolute bottom-0 translate-y-1/2 w-24 h-24 rounded-full btn-premium bg-gradient-to-br from-[#ffffff10] to-[#ffffff05] backdrop-blur-md flex items-center justify-center border border-white/20 z-20 group cursor-pointer"
+                                <motion.div
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ delay: 0.4 }}
+                                    className="mt-12"
                                 >
-                                    <div className="absolute inset-1 rounded-full border border-white/20 group-hover:border-white/50 transition-colors" />
-                                    <span className="font-bold text-white tracking-wide group-hover:text-pink-200 transition-colors">Scan</span>
-                                </motion.button>
+                                    <button
+                                        onClick={handleScan}
+                                        className="btn-scan"
+                                    >
+                                        Scan
+                                    </button>
+                                </motion.div>
                             </div>
                         </div>
                     </motion.div>
@@ -170,12 +175,22 @@ export function SystemJunk() {
                         exit={{ opacity: 0 }}
                         className="h-full flex flex-col items-center justify-center relative z-10"
                     >
-                        <div className="w-32 h-32 relative flex items-center justify-center mb-8">
-                            <div className="absolute inset-0 border-4 border-white/5 rounded-full" />
-                            <div className="absolute inset-0 border-4 border-transparent border-t-pink-500 rounded-full animate-spin" />
-                            <Trash2 className="text-white/20" size={48} />
+                        <div className="w-48 h-48 relative flex items-center justify-center mb-12">
+                            {/* Radial Glows */}
+                            <div className="absolute inset-0 bg-primary/20 rounded-full blur-[60px] animate-pulse" />
+
+                            {/* Spinning Ring */}
+                            <div className="absolute inset-0 border-2 border-white/5 rounded-full" />
+                            <motion.div
+                                className="absolute inset-0 border-b-2 border-primary rounded-full"
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                            />
+
+                            <Trash2 className="text-white/30" size={64} strokeWidth={1} />
                         </div>
-                        <p className="text-2xl font-light text-white tracking-wide">Scanning for junk...</p>
+                        <h3 className="text-3xl font-black text-white uppercase tracking-widest shimmer-text">Scanning</h3>
+                        <p className="text-white/30 font-mono mt-4 tracking-[0.4em] uppercase text-sm">Mapping System Architecture</p>
                     </motion.div>
                 )}
 
@@ -183,44 +198,46 @@ export function SystemJunk() {
                 {viewState === 'summary' && junkResult && (
                     <motion.div
                         key="summary"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
                         className="h-full flex flex-col items-center justify-center p-12 text-center relative z-10"
                     >
                         <button
                             onClick={() => setViewState('pre-scan')}
-                            className="absolute top-8 left-8 flex items-center gap-2 text-white/50 hover:text-white transition-colors hover:bg-white/10 px-3 py-1.5 rounded-lg"
+                            className="absolute top-8 left-8 flex items-center gap-2 text-white/30 hover:text-white transition-all bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl"
                         >
-                            <ArrowLeft size={16} /> <span className="text-sm font-medium">Start Over</span>
+                            <ArrowLeft size={16} /> <span className="text-xs font-bold uppercase tracking-wider">Back</span>
                         </button>
 
-                        <div className="w-40 h-40 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center mb-8 shadow-2xl shadow-pink-500/30 ring-8 ring-white/5">
-                            <Trash2 className="w-20 h-20 text-white" strokeWidth={1} />
+                        <div className="w-44 h-44 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center mb-10 shadow-2xl shadow-primary/30 ring-[12px] ring-white/5 relative group">
+                            <div className="absolute inset-0 bg-primary/20 blur-2xl group-hover:blur-3xl transition-all duration-500" />
+                            <Trash2 className="w-24 h-24 text-white relative z-10" strokeWidth={1} />
                         </div>
 
-                        <h2 className="text-4xl font-bold text-white mb-2 tracking-tight">Scan Completed</h2>
-                        <p className="text-white/50 mb-8">We found some files you can safely remove.</p>
+                        <h2 className="text-5xl font-black text-white mb-3 tracking-tighter shimmer-text">Scan Completed</h2>
+                        <p className="text-xl text-white/40 mb-12 font-medium">Safe to remove files identified</p>
 
-                        <div className="flex flex-col items-center glass-card p-10 w-full max-w-md border border-white/10">
-                            <div className="text-6xl font-light text-pink-400 mb-2 font-mono tracking-tight drop-shadow-[0_0_15px_rgba(244,114,182,0.3)]">
+                        <div className="flex flex-col items-center glass-frost p-12 w-full max-w-lg border border-white/10 rounded-[3rem] shadow-2xl">
+                            <div className="text-7xl font-black text-primary mb-3 font-mono tracking-tighter">
                                 {formatBytes(selectedSize)}
                             </div>
-                            <p className="text-white/40 mb-8 text-sm uppercase tracking-widest font-medium">Smart Selection</p>
+                            <p className="text-white/30 mb-10 text-xs uppercase tracking-[0.3em] font-bold">Recommended for removal</p>
 
                             <button
                                 onClick={() => setViewState('detail')}
-                                className="text-sm text-pink-300 hover:text-white hover:underline transition-colors mb-8"
+                                className="text-sm font-bold text-primary/60 hover:text-primary transition-colors mb-10 flex items-center gap-2 group"
                             >
-                                Review Details...
+                                Review Storage Details
+                                <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
                             </button>
 
                             <button
                                 onClick={handleClean}
                                 disabled={cleaning || selectedJunkItems.size === 0}
-                                className="w-full py-4 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-bold text-lg shadow-lg shadow-pink-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none btn-premium"
+                                className="w-full py-5 rounded-3xl bg-primary hover:scale-[1.02] active:scale-[0.98] text-white font-black text-xl shadow-xl shadow-primary/30 transition-all disabled:opacity-30 uppercase tracking-widest"
                             >
-                                {cleaning ? 'Cleaning...' : 'Clean Junk'}
+                                {cleaning ? 'Purging Clutter...' : 'Clean Now'}
                             </button>
                         </div>
                     </motion.div>

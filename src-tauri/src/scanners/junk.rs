@@ -1,9 +1,12 @@
 use super::{ScanResult, ScannedItem};
 use std::fs;
 use std::path::Path;
+use std::time::{Duration, Instant};
 
-const MAX_DEPTH: u32 = 50;
-// const MAX_ENTRIES: usize = 2000; // Removed limit to ensure full scan
+const MAX_DEPTH: u32 = 8;              // Was 50 — deep enough for app caches, not for crawling the entire FS
+const MAX_FILES_PER_DIR: usize = 500; // Cap per template to avoid millions-of-files hangs
+const MAX_TOTAL_FILES: usize = 5_000; // Global cap across all templates
+const SCAN_TIMEOUT_SECS: u64 = 25;   // Hard deadline: give up after 25s, return what we have
 
 /// Path templates relative to home (no leading ~).
 #[cfg(target_os = "macos")]
@@ -43,11 +46,15 @@ const JUNK_TEMPLATES: &[&str] = &[
     
     // System/User Junk
     "Library/Application Support/CrashReporter",
-    "Library/Saved Application State", // Saved state for apps (safe to delete, just resets window positions etc)
-    ".Trash", // User Trash
-    "Desktop", // Scan for loose screenshots
-    "Desktop/screenshots", // Common custom folder
-    "Downloads", // Optional: Scan for old installers (dmg, pkg, zip) - logic handled in filter
+    "Library/Saved Application State",
+    ".Trash",
+    "Desktop",
+    "Desktop/screenshots",
+    "Downloads",
+
+    // CMM-level categories
+    "Library/Caches/com.apple.SoftwareUpdate", // Old Updates
+    "Library/Caches/com.apple.Safari/Localization", // Language Files (Safari localization cache)
 ];
 
 #[cfg(target_os = "windows")]
@@ -100,6 +107,8 @@ fn category_name(tpl: &str) -> &'static str {
     else if tpl.contains("Saved Application State") { "App State" }
     else if tpl.contains("Desktop") { "Screenshots" }
     else if tpl.contains("Downloads") { "Old Installers" }
+    else if tpl.contains("SoftwareUpdate") { "Old Updates" }
+    else if tpl.contains("Localization") { "Language Files" }
     
     // Windows Specific
     else if tpl.contains("Edge") { "Edge Cache" }
@@ -132,8 +141,16 @@ pub fn scan_junk(home: &str) -> ScanResult {
     let mut items = Vec::new();
     let errors = Vec::new();
     let mut total_size_bytes = 0u64;
+    let mut total_files_scanned = 0usize;
+    let deadline = Instant::now() + Duration::from_secs(SCAN_TIMEOUT_SECS);
 
-    for tpl in JUNK_TEMPLATES {
+    'outer: for tpl in JUNK_TEMPLATES {
+        // Hard deadline: if we've been scanning longer than SCAN_TIMEOUT_SECS, stop
+        if Instant::now() >= deadline {
+            eprintln!("⚠️ Junk scan timeout reached after {} seconds. Returning partial results.", SCAN_TIMEOUT_SECS);
+            break;
+        }
+
         let full = home.join(tpl);
         if !full.exists() {
             continue;
@@ -143,17 +160,27 @@ pub fn scan_junk(home: &str) -> ScanResult {
         let (depth, is_desktop) = if tpl == &"Desktop" {
              (1, true)
         } else if tpl == &"Desktop/screenshots" {
-             (2, false) // deeper in screenshots folder is fine
+             (2, false)
         } else {
              (MAX_DEPTH as usize, false)
         };
 
-        // iterate efficiently using WalkDir
         let walker = walkdir::WalkDir::new(&full)
             .max_depth(depth)
             .into_iter();
 
+        let mut dir_file_count = 0usize;
+
         for entry in walker {
+            // Deadline and global cap checks inside inner loop
+            if Instant::now() >= deadline || total_files_scanned >= MAX_TOTAL_FILES {
+                break 'outer;
+            }
+            // Per-directory cap
+            if dir_file_count >= MAX_FILES_PER_DIR {
+                break;
+            }
+
             let entry = match entry {
                 Ok(e) => e,
                 Err(e) => {
@@ -162,31 +189,21 @@ pub fn scan_junk(home: &str) -> ScanResult {
                 }
             };
             let path = entry.path();
-            
-            // We only want to delete FILES, not directories (unless empty, but simpler to just do files)
+
             if !path.is_file() {
                 continue;
             }
 
             if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                // Skip if whitelisted
                 if is_whitelisted(name) {
                     continue;
                 }
-                
-                // Logic to avoid deleting ENTIRE profile data if we accidentally pointed to parent
-                // e.g. don't delete "Cookies", "History"
                 if name.eq_ignore_ascii_case("Cookies") || name.eq_ignore_ascii_case("History") {
                     continue;
                 }
-
-                // Desktop specific logic: Only pick up screenshots
-                if is_desktop
-                     && !name.starts_with("Screenshot") {
-                         continue;
-                     }
-
-                // Downloads specific logic: Only pick up likely installers/archives
+                if is_desktop && !name.starts_with("Screenshot") {
+                    continue;
+                }
                 if tpl.contains("Downloads") {
                     let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
                     if !["dmg", "pkg", "iso", "zip", "tar", "gz", "7z", "rar"].contains(&ext.as_str()) {
@@ -202,14 +219,58 @@ pub fn scan_junk(home: &str) -> ScanResult {
 
             let size = meta.len();
             if size > 0 {
+                let cat = if tpl.contains("Downloads") {
+                    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+                    if ext == "dmg" || ext == "iso" {
+                        "Unused Disk Images"
+                    } else {
+                        category_name(tpl)
+                    }
+                } else {
+                    category_name(tpl)
+                };
                 items.push(ScannedItem {
                     path: path.to_string_lossy().to_string(),
                     size_bytes: size,
-                    category_name: category_name(tpl).to_string(),
-                    is_directory: false, // It's a file now
+                    category_name: cat.to_string(),
+                    is_directory: false,
                     accessed_date: None,
                 });
                 total_size_bytes += size;
+                dir_file_count += 1;
+                total_files_scanned += 1;
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        if total_files_scanned < MAX_TOTAL_FILES && Instant::now() < deadline {
+            let prefs_dir = home.join("Library/Preferences");
+            if prefs_dir.exists() {
+                if let Ok(entries) = fs::read_dir(&prefs_dir) {
+                    for entry in entries.flatten() {
+                        let p = entry.path();
+                        if p.is_file()
+                            && p.extension().map(|e| e == "plist").unwrap_or(false)
+                            && total_files_scanned < MAX_TOTAL_FILES
+                        {
+                            let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+                            let path_str = p.to_string_lossy().to_string();
+                            if is_broken_plist(&p) {
+                                items.push(ScannedItem {
+                                    path: path_str,
+                                    size_bytes: size,
+                                    category_name: "Broken Preferences".to_string(),
+                                    is_directory: false,
+                                    accessed_date: None,
+                                });
+                                total_size_bytes += size;
+                                total_files_scanned += 1;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -219,6 +280,23 @@ pub fn scan_junk(home: &str) -> ScanResult {
         total_size_bytes,
         errors,
     }
+}
+
+#[cfg(target_os = "macos")]
+fn is_broken_plist(path: &Path) -> bool {
+    use std::io::Read;
+    let mut f = match fs::File::open(path) {
+        Ok(f) => f,
+        Err(_) => return true,
+    };
+    let mut buf = Vec::new();
+    if f.read_to_end(&mut buf).is_err() {
+        return true;
+    }
+    if buf.is_empty() {
+        return true;
+    }
+    plist::from_bytes::<plist::Value>(&buf).is_err()
 }
 
 #[cfg(test)]

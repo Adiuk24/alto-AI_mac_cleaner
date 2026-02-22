@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTauri } from '../hooks/useTauri';
 import { formatBytes } from '../utils/formatBytes';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,16 +41,22 @@ export function SpaceLens() {
     const [selectedPath, setSelectedPath] = useState<string | null>(null);
     const [history, setHistory] = useState<FileNode[]>([]);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [scanDepth, setScanDepth] = useState(4);
+    const [homePath, setHomePath] = useState<string | null>(null);
 
-    const handleScan = async (path?: string) => {
-        if (!path) setViewState('scanning');
+    useEffect(() => {
+        call<string>('get_home_dir_command').then(setHomePath).catch(() => {});
+    }, [call]);
+
+    const handleScan = async (path?: string | null, depth: number = scanDepth, asRootScan: boolean = false) => {
+        if (asRootScan) setViewState('scanning');
         try {
-            // Artificial delay for effect only on initial
-            if (!path) await new Promise(r => setTimeout(r, 1000));
-
-            const result = await call<FileNode>('scan_space_lens_command', { path: path || null });
-
-            if (!path) {
+            if (asRootScan) await new Promise(r => setTimeout(r, 800));
+            const result = await call<FileNode>('scan_space_lens_command', {
+                path: path ?? null,
+                depth,
+            });
+            if (asRootScan) {
                 setRootNode(result);
                 setCurrentNode(result);
                 setViewState('result');
@@ -59,7 +65,7 @@ export function SpaceLens() {
             }
         } catch (e) {
             console.error(e);
-            if (!path) setViewState('landing');
+            if (asRootScan) setViewState('landing');
         }
     };
 
@@ -78,7 +84,7 @@ export function SpaceLens() {
 
         // Fetch children if missing (lazy load)
         if (!fileNode.children || fileNode.children.length === 0) {
-            const fetched = await handleScan(fileNode.path);
+            const fetched = await handleScan(fileNode.path, undefined, false);
             if (fetched) nextNode = fetched;
         }
 
@@ -167,15 +173,45 @@ export function SpaceLens() {
                         <div className="max-w-4xl w-full grid grid-cols-2 gap-12 items-center">
                             <div>
                                 <h1 className="text-4xl font-bold mb-4 text-white">Space Lens</h1>
-                                <p className="text-lg text-white/70 mb-8 leading-relaxed">
+                                <p className="text-lg text-white/70 mb-6 leading-relaxed">
                                     Visualize your storage usage with an interactive heatmap. Spot large folders instantly.
                                 </p>
-                                <button
-                                    onClick={() => handleScan()}
-                                    className="px-8 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 transition-all font-semibold text-white shadow-lg shadow-emerald-900/40"
-                                >
-                                    Build Storage Map
-                                </button>
+                                <div className="mb-4">
+                                    <span className="text-xs text-white/50 uppercase tracking-wider">Depth</span>
+                                    <div className="flex gap-2 mt-1">
+                                        {[3, 4, 5, 6].map(d => (
+                                            <button
+                                                key={d}
+                                                onClick={() => setScanDepth(d)}
+                                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${scanDepth === d ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+                                            >
+                                                {d}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        onClick={() => handleScan(null, scanDepth, true)}
+                                        className="px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 transition-all font-semibold text-white shadow-lg shadow-emerald-900/40"
+                                    >
+                                        Home
+                                    </button>
+                                    <button
+                                        onClick={() => handleScan('/Applications', scanDepth, true)}
+                                        className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 font-medium text-white transition-all"
+                                    >
+                                        Applications
+                                    </button>
+                                    {homePath && (
+                                        <button
+                                            onClick={() => handleScan(`${homePath}/Library`, scanDepth, true)}
+                                            className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 font-medium text-white transition-all"
+                                        >
+                                            Library
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex items-center justify-center">
                                 <div className="w-64 h-64 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20">

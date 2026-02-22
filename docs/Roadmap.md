@@ -1,6 +1,6 @@
 # Project Roadmap 🗺️
 
-This document outlines the planned trajectory for **Alto**. Our goal is to move from a standard system cleaner to a fully autonomous, AI-driven device maintenance suite.
+This document outlines the planned trajectory for **Alto**. **Vision:** Alto is the **AI-based pro cleaner** — feature parity with leading system cleaners, with an AI that explains, suggests, and automates cleanup safely. Our goal is to evolve into a fully autonomous, AI-driven device maintenance suite.
 
 ---
 
@@ -14,7 +14,7 @@ This document outlines the planned trajectory for **Alto**. Our goal is to move 
 - [x] **2.0.0**: Introduction of the Premium AI Assistant (Agentic Chat).
 - [x] **2.1.0**: **MCP Safety Layer** & Real-time Task Reporting.
 - [x] **2.1.0**: Live System Monitoring (Background Watcher).
-- [ ] **2.2.0**: Advanced "Visual Space Lens" for disk exploration. (Upcoming)
+- [x] **2.2.0**: Space Lens with depth control, multiple roots (Home, Applications, Library), and one-click cleanup.
 
 ## 🔜 v3.0 - The Autonomous Suite (Mid 2026)
 - [ ] **Self-Healing Features**: Auto-detecting performance regressions and fixing them in the background.

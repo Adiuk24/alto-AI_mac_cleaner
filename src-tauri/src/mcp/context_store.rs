@@ -83,7 +83,11 @@ impl ContextStore {
         self.last_scan_timestamp = None;
         self.deletion_history.clear();
         self.system_events.clear();
-        // we keep user_preferences
+        self.save();
+    }
+
+    pub fn update_user_preferences(&mut self, prefs: UserPrefs) {
+        self.user_preferences = prefs;
         self.save();
     }
 }
