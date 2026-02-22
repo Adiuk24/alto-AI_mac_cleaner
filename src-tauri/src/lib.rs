@@ -259,6 +259,7 @@ async fn scan_large_files_command() -> Result<ScanResult, String> {
 #[tauri::command]
 async fn scan_space_lens_command(path: Option<String>, depth: Option<u32>) -> Result<scanners::space_lens::FileNode, String> {
     let home = dirs::home_dir().ok_or("No home directory")?;
+    // Build in block so Windows build does not need mut on outer binding (macOS pushes extra roots).
     let allowed_roots: Vec<PathBuf> = {
         let mut v = vec![home.clone()];
         #[cfg(target_os = "macos")]
